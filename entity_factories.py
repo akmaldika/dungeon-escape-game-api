@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 player = Actor(
-    char= 0x100000 if os.getenv("IS_USE_GRAPHIC") == "1" else "@",
+    char= 0x100000 if os.getenv("IS_USE_GRAPHIC") == "1" or True else "@",
     # color=(255, 255, 255),
     color=(71, 108, 108),
     name="Player",
@@ -22,7 +22,7 @@ player = Actor(
 )
 
 ghost = Actor(
-    char= 0x100001 if os.getenv("IS_USE_GRAPHIC") == "1" else "O",
+    char= 0x100001 if os.getenv("IS_USE_GRAPHIC") == "1" or True else "O",
     # color=(63, 127, 63),
     color=(71, 108, 108),
     name="Ghost",
@@ -34,7 +34,7 @@ ghost = Actor(
 )
 
 troll = Actor(
-    char= 0x100002 if os.getenv("IS_USE_GRAPHIC") == "1" else "T",
+    char= 0x100002 if os.getenv("IS_USE_GRAPHIC") == "1" or True else "T",
     # color=(0, 127, 0),
     color=(71, 108, 108),
     name="Crab",

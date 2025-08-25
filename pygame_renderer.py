@@ -77,6 +77,7 @@ class PygameRenderer:
         """Load all sprites and tile images."""
         load_dotenv()
         use_graphics = os.getenv("IS_USE_GRAPHIC") == "1"
+        use_graphics = True
         
         # Asset paths
         sprite_paths = {
