@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import lzma
 import pickle
-import os
-from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 from tcod.console import Console
@@ -25,47 +23,9 @@ class Engine:
         self.message_log = MessageLog(self)
         self.player = player
         self.step_counter = 0
-        self.game_id = self.get_next_game_id()
         self.is_using_custom_map = False  # Add this flag
         self.game_done = False  # Flag untuk game done
         self._current_step_messages = []  # Track messages for current step
-        self._ensure_log_directory()
-        self._clear_current_game_log()  # Add this line
-
-
-    def get_next_game_id(self) -> int:
-        """Get next game ID by checking existing game folders."""
-        base_path = "data/logs"
-        os.makedirs(base_path, exist_ok=True)
-        
-        game_folders = [d for d in os.listdir(base_path) if d.startswith("game_") and os.path.isdir(os.path.join(base_path, d))]
-        if not game_folders:
-            return 1
-        
-        # Extract game numbers and find the highest
-        game_numbers = []
-        for folder in game_folders:
-            try:
-                num = int(folder.replace("game_", ""))
-                game_numbers.append(num)
-            except ValueError:
-                continue
-        
-        return max(game_numbers) + 1 if game_numbers else 1
-
-    def _ensure_log_directory(self) -> None:
-        """Create log directory structure for current game session."""
-        self.log_dir = f"./data/logs"
-        os.makedirs(self.log_dir, exist_ok=True)
-    
-    def _clear_current_game_log(self) -> None:
-        """Clear the current game log file at the start of a new game."""
-        filename = "game_state_log.txt"
-        filepath = os.path.join(self.log_dir, filename)
-        
-        # Clear the file by writing empty content
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write("")  # Empty file
 
     def start_new_step(self) -> None:
         """Called at the beginning of each new step to reset message tracking."""
@@ -119,49 +79,6 @@ class Engine:
     def get_current_level(self) -> int:
         """Get current dungeon level (1-based)."""
         return getattr(self.game_world, 'current_floor', 1)
-
-    def log_game_state(self) -> None:
-        """Log current game state to a single file, overwriting each time."""
-        if not hasattr(self, 'game_world'):
-            return
-
-        current_level = self.game_world.current_floor
-        filename = "game_state_log.txt"
-        filepath = os.path.join(self.log_dir, filename)
-
-        # Get messages from current step only
-        message_log_text = ""
-        if hasattr(self, '_current_step_messages') and self._current_step_messages:
-            formatted_messages = []
-            for msg_data in self._current_step_messages:
-                if msg_data['count'] > 1:
-                    formatted_messages.append(f"- {msg_data['text']} ({msg_data['count']} times)")
-                else:
-                    formatted_messages.append(f"- {msg_data['text']}")
-            message_log_text = "\n".join(formatted_messages)
-
-        # Special case for game done
-        if self.game_done:
-            message_log_text = "- Game Done Congratulation (Press 'q' to quit)"
-
-        # Get player tile type
-        player_tile = self.get_player_tile_type()
-        
-        # Get player health
-        player_health = f"{self.player.fighter.hp}/{self.player.fighter.max_hp}"
-
-        # Write to first file (overwrite mode)
-        content = f"""current level: {current_level}
-step: {self.step_counter}
-message log:
-{message_log_text}
-
-player standing on: {player_tile}
-player's health: {player_health}
-"""
-
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(content)
 
     def get_player_tile_type(self) -> str:
         """Get the type of tile the player is standing on."""

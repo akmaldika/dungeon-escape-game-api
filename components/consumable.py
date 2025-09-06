@@ -16,8 +16,7 @@ if TYPE_CHECKING:
     from entity import Actor, Item
 
 
-class Consumable(BaseComponent):
-    parent: Item
+class Consumable(BaseComponent["Item"]):
 
     def get_action(self, consumer: Actor) -> Optional[ActionOrHandler]:
         """Try to return the action for this item."""

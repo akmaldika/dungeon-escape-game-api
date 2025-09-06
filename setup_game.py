@@ -37,7 +37,7 @@ def new_game(use_custom_map=False, custom_map_file="", custom_map_string="") -> 
     map_height = 30
 
     room_max_size = 6
-    room_min_size = 2
+    room_min_size = 4
     max_rooms = 30
 
     player = copy.deepcopy(entity_factories.player)
@@ -96,9 +96,6 @@ def new_game(use_custom_map=False, custom_map_file="", custom_map_string="") -> 
     for potion in potions:
         player.inventory.items.append(potion)
 
-    # Log initial game state (step 0) - Add this line
-    engine.log_game_state()
-    
     return engine
 
 

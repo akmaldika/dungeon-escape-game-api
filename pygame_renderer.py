@@ -11,13 +11,17 @@ from PIL import Image
 import io
 import os
 from typing import Dict, Tuple, Optional, List
-from dotenv import load_dotenv
 
 # Game imports
-import color
-import tile_types
-import entity_factories
-from render_order import RenderOrder
+try:
+    from src.core import color, tile_types, entity_factories
+    from src.core.render_order import RenderOrder
+except Exception:
+    # Fallback during migration
+    import color
+    import tile_types
+    import entity_factories
+    from render_order import RenderOrder
 
 class PygameRenderer:
     """Pygame-based renderer for the game."""
@@ -75,8 +79,7 @@ class PygameRenderer:
         
     def _load_assets(self):
         """Load all sprites and tile images."""
-        load_dotenv()
-        use_graphics = os.getenv("IS_USE_GRAPHIC") == "1"
+    # No .env usage; attempt to load sprites if files exist
         use_graphics = True
         
         # Asset paths
@@ -265,7 +268,8 @@ class PygameRenderer:
             # Show last few messages (increased to 6 to show more)
             recent_messages = engine.message_log.messages[-6:]  # Last 6 messages
             for i, message in enumerate(recent_messages):
-                msg_surface = self.font.render(message.plain_text[:80], True, message.fg)  # Truncate long messages
+                # Show stacked count using full_text (e.g., "That way is blocked. (x3)")
+                msg_surface = self.font.render(message.full_text[:80], True, message.fg)  # Truncate long messages
                 surface.blit(msg_surface, (msg_x, msg_y + i * 20))  # Increased line spacing
     
     def render_main_menu(self, surface: Optional[pygame.Surface] = None):

@@ -10,13 +10,11 @@ if TYPE_CHECKING:
     from entity import Actor
 
 
-class Fighter(BaseComponent):
-    parent: Actor
+class Fighter(BaseComponent["Actor"]):
 
-    def __init__(self, hp: int, base_defense: int, base_power: int):
+    def __init__(self, hp: int, base_power: int):
         self.max_hp = hp
         self._hp = hp
-        self.base_defense = base_defense
         self.base_power = base_power
 
     @property
@@ -28,10 +26,6 @@ class Fighter(BaseComponent):
         self._hp = max(0, min(value, self.max_hp))
         if self._hp == 0:
             self.die()
-
-    @property
-    def defense(self) -> int:
-        return self.base_defense
 
     @property
     def power(self) -> int:

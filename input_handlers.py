@@ -84,12 +84,8 @@ class EventHandler(BaseEventHandler):
         if action_or_state is not None:
             self.engine.start_new_step()
         
-        # Handle the action first, then log the resulting state
+        # Handle the action first
         action_performed = self.handle_action(action_or_state)
-        
-        # Log game state AFTER action is performed (to capture the current state)
-        if action_or_state is not None:  # Only log if there was an action
-            self.engine.log_game_state()
         
         if action_performed:
             # Auto check for stairs after any action, turned off for now

@@ -1,7 +1,6 @@
 tcod>=11.15
 numpy>=1.18
 imageio>=2.36
-python-dotenv>=1.0
 pillow
 pygame
 fastapi>=0.104.0

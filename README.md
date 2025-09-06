@@ -1,29 +1,177 @@
+## Endpoints
+
+### 1. GET /game-state
+
+Response (shape):
+
+```json
+{
+  "dungeon_level": 1,
+  "current_level_step_count": 0,
+  "message_log": [
+    "You descend the staircase.",
+    "You feel refreshed! Restored 5 health."
+  ],
+  "player_standing_on": "floor",
+  "player_health": 10,
+  "health_potion_count": 2,
+  "is_done": false,
+  "end_reason": null,
+  "legal_actions": [
+    "w","up","a","left","s","down","d","right",".","g","i","space"
+  ]
+}
+```
+
+Field reference:
+- `dungeon_level` (int): Current dungeon floor, 1-based.
+- `current_level_step_count` (int): Number of turns taken on the current floor. Resets when you move to a new floor.
+- `message_log` (string[]): Messages for the current step; consecutive duplicates are compacted as “(N times)”.
+- `player_standing_on` (string): Description of the tile under the player. Values include:
+  - "floor"
+  - "item(Health Potion) (press 'g' to pick up)"
+  - "ladder/stairs"
+  - "-" when game already done
+- `player_health` (int): Player HP at time of query.
+- `health_potion_count` (int): Count of health potions in inventory.
+- `is_done` (bool): Episode ended flag.
+- `end_reason` ("victory" | "death" | null): Why the episode ended.
+  - "victory": Player reached stairs on custom/static map and pressed SPACE.
+  - "death": Player HP reached 0 on any map.
+- `legal_actions` (string[]): Allowed inputs now. Contains movement (WASD + arrows) when the target tile is walkable or has an enemy, `g` only on items, `i` if any potion in inventory, `space` only on stairs.
+
+Errors:
+- 400: No active game session (e.g., game not started or not in a playable state).
+
+### 2. GET /observation
+
+Single-call observation that pairs pixels with structured state. Returns JSON:
+
+```json
+{
+  "step_id": 3,
+  "dungeon_level": 1,
+  "is_done": false,
+  "end_reason": null,
+  "screenshot_png_base64": "...",
+  "player": {"x": 10, "y": 5, "hp": 7, "power": 2},
+  "enemies": [{"name": "Ghost", "x": 12, "y": 5, "hp": 10, "power": 2}],
+  "items": [{"name": "Health Potion", "x": 9, "y": 5}],
+  "stairs": [15, 8],
+  "visible_mask": [[true, false, ...], ...],
+  "legal_actions": ["w","up", ".", "g"]
+}
+```
+
+Field reference:
+- `step_id` (int): Turn counter for current floor (same basis as `current_level_step_count`).
+- `dungeon_level` (int): Current dungeon floor, 1-based.
+- `is_done` / `end_reason`: Same semantics as `/game-state`.
+- `screenshot_png_base64` (string): Base64-encoded PNG of the full frame (exact pixels).
+- `player` (object): `{ x, y, hp, power }` for the player.
+- `enemies` (array): Visible enemies only. Each `{ name, x, y, hp, power }`.
+- `items` (array): Visible items only. Each `{ name, x, y }`.
+- `stairs` ([x, y] | null): Stairs if inside FOV.
+- `visible_mask` (bool[H][W]): Row-major mask (height x width). `true` where tile is inside current FOV. entities/items/stairs only appear if their tile is `true`.
+- `legal_actions` (string[]): Same filtering rules as in `/game-state`.
+
+Errors:
+- 400: No active game session (e.g., game not started). Works after victory/death screens as well.
+
+### 3. GET /game-screenshot
+
+Returns a screenshot in either base64 JSON or raw bytes.
+
+- Query param: `fmt=b64|bytes` (default: `b64`)
+  - `b64` response:
+    ```json
+    {
+      "screenshot_png_base64": "...",
+      "tile_size": 16,
+      "total_width_tiles": 60,
+      "total_height_tiles": 40,
+      "map_width_tiles": 30,
+      "map_height_tiles": 30,
+      "total_width_pixels": 960,
+      "total_height_pixels": 640,
+      "map_width_pixels": 480,
+      "map_height_pixels": 480
+    }
+    ```
+  - `bytes` response: `image/png` with the same dimension metadata in headers.
+
+Errors:
+- 400: No active game or failed to capture screenshot.
+
+### 4. POST /start-game
+
+Body:
+```json
+{ "mode": "procedural" | "custom" | "string", "custom_map": "..." }
+```
+
+Returns the same shape as GET `/game-state`. When `mode=string`, `custom_map` (ASCII map) is required.
+
+Modes and semantics:
+- `procedural`:
+  - Generates a random dungeon.
+  - SPACE on stairs descends to the next floor (does NOT end the episode).
+  - `is_done` becomes `true` only if the player dies (`end_reason = "death").
+- `custom`:
+  - Loads a predefined map file (`custom_map.txt`).
+  - Pressing SPACE on stairs ends the episode with victory (`end_reason = "victory").
+- `string`:
+  - Loads an inline ASCII map from `custom_map`.
+  - Same termination as `custom` (SPACE on stairs => victory).
+
+ASCII map legend (for `mode=string`):
+- `#` = wall (blocked)
+- `.` = floor (walkable)
+- `@` = player start (recommended one occurrence)
+- `>` = stairs/exit (required for a solvable map)
+- `O` = ghost (enemy)
+- `T` = crab (enemy)
+- `h` = health potion (item)
+
+Constraints and notes:
+- All rows should have equal length (rectangular map).
+- Provide at least one `@` (player) and one `>` (stairs).
+
+Errors:
+- 400: Invalid mode (must be `procedural`, `custom`, or `string`).
+- 400: `custom_map` missing when `mode="string"`.
+- 500: Failed to start game (if initialization didn’t complete in time).
+
+### 5. POST /perform-action
+
+Body:
+```json
+{ "action": "w|a|s|d|up|down|left|right|g|i|space|." }
+```
+
+Returns:
+```json
+{ "action_executed": "w", "state_changes": { /* same as /game-state */ } }
+```
+
+The API waits for the step to advance (or level to change) before returning, ensuring turn-based sync for agents.
+
+Errors:
+- 400: Invalid action key.
+- 400: No active game session.
+
+Notes:
+- The endpoint returns after the turn is applied or a short timeout if no state change is detected.
+
 # Dungeon Escape Game API
 
 A turn-based roguelike dungeon crawler game with dual control modes: traditional keyboard input and REST API for AI agents. Built with Python using pygame for rendering and FastAPI for the web API.
-
-## Features
-
-- **Dual Control Modes**: Play with keyboard or control via REST API
-- **AI-Friendly**: Clean JSON responses and pixel-perfect screenshots for AI model training
-- **Custom Maps**: Load custom dungeon layouts from string format
-- **Progressive Difficulty**: Dungeon-level-based scaling system
-- **Real-time Screenshots**: Get game state as PNG images via API
-- **Clean Game State**: Structured JSON responses with complete game information
-
-## Game Mechanics
-
-- **Turn-based Combat**: Strategic combat with health and damage systems
-- **Field of View**: Dynamic lighting and vision mechanics using tcod algorithms
-- **Level Progression**: Health scaling based on dungeon level (+15 HP per level beyond 1)
-- **Inventory System**: Direct health potion usage with 'i' key
-- **Message System**: Clean death handling and step-based message tracking
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.12 or higher
 - pip package manager
 
 ### Setup
@@ -39,16 +187,11 @@ A turn-based roguelike dungeon crawler game with dual control modes: traditional
    pip install -r requirements.txt
    ```
 
-3. **Create environment file** (optional):
-   ```bash
-   # Create .env file for configuration
-   echo "API_HOST=localhost" > .env
-   echo "API_PORT=8000" > .env
-   ```
 
 ## Running the Game
 
 ### Start the Game Server
+
 
 ```bash
 python main.py
@@ -61,11 +204,11 @@ This will:
 
 ### Game Controls (Keyboard Mode)
 
-- **Movement**: Arrow keys or WASD
-- **Wait**: Period (.) key - skip a turn
-- **Inventory**: 'i' key - use health potion
-- **Menu Navigation**: ESC key - return to main menu
-- **Confirm**: Enter key
+- Movement: Arrow keys or WASD
+- Wait: Period (.) key
+- Inventory: i (use health potion)
+- Pickup: g
+- Use stairs: Space
 
 ## API Documentation
 
@@ -76,19 +219,11 @@ http://localhost:8000
 
 ### Endpoints
 
-#### 1. Get Game Screenshot
+#### 1. Health Check
 ```http
-GET /game-screenshot
+GET /
 ```
-
-**Response**: PNG image with headers containing game dimensions
-
-**Headers**:
-- `Game-Width`: Game area width in pixels
-- `Game-Height`: Game area height in pixels  
-- `Total-Width`: Total window width in pixels
-- `Total-Height`: Total window height in pixels
-- `Tile-Size`: Individual tile size in pixels (16x16)
+Returns basic server info and tile size.
 
 #### 2. Get Game State
 ```http
@@ -98,123 +233,209 @@ GET /game-state
 **Response**:
 ```json
 {
-  "current_state": "InGameEventHandler",
-  "player": {
-    "x": 25,
-    "y": 25, 
-    "hp": 30,
-    "max_hp": 30,
-    "name": "Player"
-  },
   "dungeon_level": 1,
-  "step_count": 42,
-  "message_log": [
-    "Hello and welcome, adventurer, to yet another dungeon!",
-    "You descend the staircase."
-  ],
-  "current_step_messages": [],
-  "entities": [
-    {
-      "x": 30,
-      "y": 25,
-      "name": "Ghost",
-      "hp": 10,
-      "max_hp": 10
-    }
-  ],
-  "items": [
-    {
-      "x": 35,
-      "y": 30,
-      "name": "Health Potion"
-    }
-  ],
-  "stairs_position": {"x": 40, "y": 35}
+  "current_level_step_count": 42,
+  "message_log": ["You descend the staircase."],
+  "player_standing_on": "floor",
+  "player_health": 30,
+  "health_potion_count": 1
 }
 ```
 
 #### 3. Perform Action
 ```http
-POST /action
+POST /perform-action
+POST /action  # alias
 Content-Type: application/json
 
-{
-  "action": "move",
-  "direction": [0, -1]
-}
-```
-
-**Available Actions**:
-
-**Movement**:
-```json
-{"action": "move", "direction": [0, -1]}  // North
-{"action": "move", "direction": [0, 1]}   // South  
-{"action": "move", "direction": [-1, 0]}  // West
-{"action": "move", "direction": [1, 0]}   // East
-```
-
-**Combat**:
-```json
-{"action": "bump", "direction": [0, -1]}  // Attack enemy to the north
-```
-
-**Other Actions**:
-```json
-{"action": "wait"}                        // Skip turn
-{"action": "use_inventory"}              // Use health potion
-{"action": "take_stairs"}                // Descend to next level
-{"action": "pickup"}                     // Pick up item at current position
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "Action performed successfully",
-  "new_state": "InGameEventHandler"
-}
+{ "action": "w" }        # also: a,s,d, up,down,left,right
+{ "action": "." }        # wait
+{ "action": "g" }        # pickup
+{ "action": "i" }        # use health potion
+{ "action": "space" }    # take stairs
 ```
 
 #### 4. Start New Game
 ```http
-POST /new-game
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "New game started"
-}
-```
-
-#### 5. Load Custom Map
-```http
-POST /load-custom-map
+POST /start-game
 Content-Type: application/json
+```
+Body options:
+- Procedural (random): `{ "mode": "procedural" }`
+- Custom predefined map file: `{ "mode": "custom" }`
+- Inline string map: `{ "mode": "string", "custom_map": "########\n#@..>..#\n########" }`
 
-{
-  "map_string": "##########\n#@.......#\n#.......h#\n#...O....#\n#........#\n#.......>#\n##########"
-}
+Legend: `#` wall, `.` floor, `@` player, `>` stairs, `O` ghost, `T` crab, `h` health potion.
+
+Response matches GET /game-state.
+
+#### 5. Get Game Screenshot
+```http
+GET /game-screenshot
+```
+Returns PNG bytes. Headers include dimensions:
+- `X-Tile-Size`
+- `X-Total-Width-Tiles`, `X-Total-Height-Tiles`
+- `X-Map-Width-Tiles`, `X-Map-Height-Tiles`
+- `X-Total-Width-Pixels`, `X-Total-Height-Pixels`
+- `X-Map-Width-Pixels`, `X-Map-Height-Pixels`
+
+#### 6. Get Technical Game Information
+```http
+GET /game-info
+```
+Returns structured info (type, stats, capabilities, interactions, image_url, tile_size).
+
+#### 7. Get Single Sprite/Tile Image
+```http
+GET /sprite/{name}.png
+```
+Examples: `/sprite/player.png`, `/sprite/wall.png`, `/sprite/ladder.png`.
+
+## API Usage Examples (curl)
+
+Here are comprehensive curl examples for all API endpoints:
+
+### 1. Health Check
+```bash
+curl -X GET "http://localhost:8000/"
 ```
 
-**Map Legend**:
-- `#`: Wall
-- `.`: Floor
-- `@`: Player starting position
-- `>`: Stairs to next level
-- `O`: Ghost enemy
-- `T`: Crab enemy  
-- `h`: Health potion
+### 2. Get Current Game State
+```bash
+curl -X GET "http://localhost:8000/game-state"
+```
 
-**Response**:
+### 3. Get Technical Game Information
+```bash
+curl -X GET "http://localhost:8000/game-info"
+```
+Returns structured technical info:
 ```json
 {
-  "success": true,
-  "message": "Custom map loaded successfully"
+  "Ghost": {
+    "type": "enemy",
+    "stats": {"health": 10, "power": 2},
+    "capabilities": ["hostile", "moves", "attacks_on_bump"],
+    "interactions": [{"bumpable": ["w","a","s","d","up","down","left","right"]}],
+    "image_url": "/sprite/ghost.png",
+    "tile_size": 16
+  }
 }
 ```
+
+### 4. Get Game Screenshot
+```bash
+# Save screenshot to file
+curl -X GET "http://localhost:8000/game-screenshot" --output screenshot.png
+
+# View response headers (includes dimension info)
+curl -X GET "http://localhost:8000/game-screenshot" -I
+```
+
+### 5. Start New Game
+
+**Procedural Map (Random Generation):**
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "procedural"}'
+```
+
+**Custom Predefined Map:**
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "custom"}'
+```
+
+**Custom String Map:**
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "string", "custom_map": "##########\n#@.......#\n#.......h#\n#...O....#\n#........#\n#.......>#\n##########"}'
+```
+
+### 6. Perform Actions
+
+**Movement:**
+```bash
+# Move North
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "w"}'
+
+# Move South
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "s"}'
+
+# Move West
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "a"}'
+
+# Move East
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "d"}'
+
+# Arrow keys also work
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "up"}'
+```
+
+**Game Actions:**
+```bash
+# Use Health Potion
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "i"}'
+
+# Pick up Item
+curl -X POST "http://localhost:8000/perform-action" -H "Content-Type: application/json" -d '{"action": "g"}'
+
+# Use Stairs (go to next level)
+curl -X POST "http://localhost:8000/perform-action" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "space"}'
+
+# Wait/Skip Turn
+curl -X POST "http://localhost:8000/perform-action" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "."}'
+```
+
+### 7. Example Game Session
+```bash
+# Start a new procedural game
+curl -X POST "http://localhost:8000/start-game" \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "procedural"}' | jq .
+
+# Move around
+curl -X POST "http://localhost:8000/perform-action" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "w"}' | jq .
+
+curl -X POST "http://localhost:8000/perform-action" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "d"}' | jq .
+
+# Check current state
+curl -X GET "http://localhost:8000/game-state" | jq .
+
+# Take a screenshot
+curl -X GET "http://localhost:8000/game-screenshot" --output current_state.png
+```
+
+### 8. Custom Map Example
+```bash
+# Load a specific custom map layout
+curl -X POST "http://localhost:8000/start-game" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "string",
+    "custom_map": "############\n#@........h#\n#..........#\n#....O.....#\n#..........#\n#....T.....#\n#..........#\n#.........>#\n############"
+  }' | jq .
+```
+
+### 9. Monitoring Script
+```bash
+#!/bin/bash
+# monitor_game.sh - Continuously monitor game state
+while true; do
+  echo "=== Game State ==="
+  curl -s "http://localhost:8000/game-state" | jq .
+  echo ""
+  sleep 2
+done
+```
+
+**Note:** Examples using `| jq .` require the `jq` command-line JSON processor for pretty-printing. Install with `apt-get install jq` (Ubuntu) or `brew install jq` (macOS).
 
 ## Game States
 
@@ -225,107 +446,17 @@ The game operates in different states:
 - **GameOverEventHandler**: Player died
 - **GameDoneEventHandler**: Game completed (reached final level)
 
-## Development
-
-### Project Structure
-
-```
-game/
-├── main.py                 # Main entry point and API server
-├── pygame_renderer.py      # Pygame rendering system  
-├── engine.py              # Game engine and logic
-├── game_map.py            # Map generation and management
-├── entity.py              # Base entity classes
-├── entity_factories.py    # Predefined entity templates
-├── custom_map_loader.py   # Custom map parsing
-├── input_handlers.py      # Keyboard and game state handlers
-├── actions.py             # Game action implementations
-├── components/            # ECS components
-│   ├── fighter.py         # Combat and health
-│   ├── ai.py             # Enemy AI behavior
-│   ├── inventory.py       # Inventory management
-│   └── level.py          # Level tracking
-├── assets/               # Game sprites and graphics
-└── test/                # Test files
-```
-
-### Testing
-
-Run the test suite:
-```bash
-# Test API endpoints
-python test/test_api_client.py
-
-# Quick gameplay test
-python test/quick_test.py
-```
-
-### Custom Map Format
-
-Create custom maps using a simple string format:
-
-```python
-custom_map = """##########
-#@.......#
-#.......h#
-#...O....#
-#........#
-#.......>#
-##########"""
-```
-
-## API Usage Examples
-
-### Python Client Example
-
-```python
-import requests
-import json
-
-# Start new game
-response = requests.post('http://localhost:8000/new-game')
-print(response.json())
-
-# Get current game state  
-response = requests.get('http://localhost:8000/game-state')
-game_state = response.json()
-print(f"Player at: ({game_state['player']['x']}, {game_state['player']['y']})")
-
-# Move player north
-action = {"action": "move", "direction": [0, -1]}
-response = requests.post('http://localhost:8000/action', json=action)
-print(response.json())
-
-# Get screenshot
-response = requests.get('http://localhost:8000/game-screenshot')
-with open('game_screenshot.png', 'wb') as f:
-    f.write(response.content)
-print(f"Game dimensions: {response.headers['Game-Width']}x{response.headers['Game-Height']}")
-```
-
-### AI Agent Integration
-
-The API is designed for AI agents with:
-- Clean JSON responses without terminal escape codes
-- Pixel-perfect screenshots for computer vision
-- Comprehensive game state information
-- Simple action format for reinforcement learning
-
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Port already in use**: Change the port in `.env` file or kill the existing process
+1. **Port already in use**: Run on a different port using uvicorn CLI args
 2. **Module not found**: Ensure all dependencies are installed with `pip install -r requirements.txt`
 3. **Pygame display issues**: Make sure you have display capabilities if running on a server
 
 ### Debug Mode
 
-Add debug logging by setting environment variable:
-```bash
-export DEBUG=1
-python main.py
-```
+Use uvicorn log level flags when running directly.
 
 ## Contributing
 
