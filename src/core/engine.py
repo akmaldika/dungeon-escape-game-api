@@ -17,13 +17,15 @@ class Engine:
 	game_map: GameMap
 	game_world: GameWorld
 
-	def __init__(self, player: Actor):
+	def __init__(self, player: Actor, fov_mode: str = "partial", fov_radius: int = 8):
 		self.message_log = MessageLog(self)
 		self.player = player
 		self.step_counter = 0
 		self.is_using_custom_map = False  # Add this flag
 		self.game_done = False  # Game done flag
 		self._current_step_messages = []  # Track messages for current step
+		self.fov_mode = fov_mode  # "partial" or "all"
+		self.fov_radius = fov_radius  # Only used if fov_mode="partial"
 
 	def start_new_step(self) -> None:
 		"""Called at the beginning of each new step to reset message tracking."""
@@ -47,11 +49,16 @@ class Engine:
 
 	def update_fov(self) -> None:
 		"""Recompute the visible area based on the players point of view."""
-		self.game_map.visible[:] = compute_fov(
-			self.game_map.tiles["transparent"],
-			(self.player.x, self.player.y),
-			radius=8,
-		)
+		if self.fov_mode == "all":
+			# All tiles visible (no fog of war)
+			self.game_map.visible[:] = True
+		else:
+			# Partial visibility with configurable radius
+			self.game_map.visible[:] = compute_fov(
+				self.game_map.tiles["transparent"],
+				(self.player.x, self.player.y),
+				radius=self.fov_radius,
+			)
 		# If a tile is "visible" it should be added to "explored".
 		self.game_map.explored |= self.game_map.visible
 
@@ -77,8 +84,15 @@ class Engine:
 		if self.game_done:
 			return "-"
 		x, y = self.player.x, self.player.y
-		if hasattr(self.game_map, 'downstairs_location') and (x, y) == self.game_map.downstairs_location:
-			return "ladder/stairs"
+		# Consider player "on" the ladder if they are on the stairs tile or
+		# on any of the 4 orthogonal neighbors (N/S/E/W). This expands the
+		# effective ladder range so agents can press SPACE when standing
+		# adjacent to the stairs.
+		if hasattr(self.game_map, 'downstairs_location') and self.game_map.downstairs_location is not None:
+			dx = abs(x - self.game_map.downstairs_location[0])
+			dy = abs(y - self.game_map.downstairs_location[1])
+			if (dx == 0 and dy == 0) or (dx + dy == 1):
+				return "ladder/stairs"
 		for item in self.game_map.items:
 			if item.x == x and item.y == y:
 				return f"item({item.name}) (press 'g' to pick up)"

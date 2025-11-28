@@ -8,10 +8,8 @@ from ..schemas import (
     PerformActionRequest,
     GameStateResponse,
     PerformActionResponse,
-    ObservationResponse,
 )
-from ..state import ThreadSafeGameState
-from ..observation import build_observation_payload
+
 
 
 def create_router(game_state: ThreadSafeGameState) -> APIRouter:
@@ -33,9 +31,7 @@ def create_router(game_state: ThreadSafeGameState) -> APIRouter:
             raise HTTPException(status_code=400, detail="No active game session")
         return state
 
-    @router.get("/observation", response_model=ObservationResponse, tags=["state"])  # type: ignore[misc]
-    async def observation():
-        return build_observation_payload(game_state)
+
 
     return router
 

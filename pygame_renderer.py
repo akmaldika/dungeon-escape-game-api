@@ -16,17 +16,22 @@ from typing import Dict, Tuple, Optional, List
 try:
     from src.core import color, tile_types, entity_factories
     from src.core.render_order import RenderOrder
+    from src.api.sprite_config import get_sprite_directory, DEFAULT_SPRITE_SIZE # type: ignore #
 except Exception:
     # Fallback during migration
     import color
     import tile_types
     import entity_factories
     from render_order import RenderOrder
+    # Inline fallback for sprite config during development/migration
+    DEFAULT_SPRITE_SIZE = 16
+    def get_sprite_directory(sprite_size):
+        return "assets/16x16" if sprite_size == 16 else "assets/8x8"
 
 class PygameRenderer:
     """Pygame-based renderer for the game."""
     
-    def __init__(self, width: int, height: int, tile_size: int = 16):
+    def __init__(self, width: int, height: int, tile_size: int = 16, headless: bool = False):
         """
         Initialize the pygame renderer.
         
@@ -34,7 +39,12 @@ class PygameRenderer:
             width: Number of tiles horizontally
             height: Number of tiles vertically  
             tile_size: Size of each tile in pixels (16x16 recommended for models)
+            headless: If True, runs without a window (for AI training/benchmarking)
         """
+        self.headless = headless
+        if self.headless:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"
+
         pygame.init()
         pygame.font.init()
         
@@ -73,26 +83,25 @@ class PygameRenderer:
             'shroud': (0, 0, 0),
             'player': (255, 255, 255),
             'ghost': (63, 127, 63),
-            'crab': (0, 127, 0),
+            'red_ghost': (0, 127, 0),
             'health_potion': (127, 0, 255),
         }
         
     def _load_assets(self):
-        """Load all sprites and tile images."""
-    # No .env usage; attempt to load sprites if files exist
+        """Load all sprites and tile images from the appropriate directory."""
         use_graphics = True
         
-        # Asset paths
+        # Get sprite directory based on tile_size
+        sprite_dir = get_sprite_directory(self.tile_size)
+        
+        # Asset paths - dynamically built based on sprite directory
+        sprite_names = [
+            'player', 'ghost', 'red_ghost', 'floor', 'dark_floor',
+            'wall', 'dark_wall', 'ladder', 'wooden_box',
+        ]
         sprite_paths = {
-            'player': 'assets/sprites/player.png',
-            'ghost': 'assets/sprites/ghost.png',
-            'crab': 'assets/sprites/crab.png',
-            'floor': 'assets/sprites/floor.png',
-            'dark_floor': 'assets/sprites/dark_floor.png',
-            'wall': 'assets/sprites/wall.png',
-            'dark_wall': 'assets/sprites/dark_wall.png',
-            'ladder': 'assets/sprites/ladder.png',
-            'chest': 'assets/sprites/chest.png',
+            name: f'{sprite_dir}/{name}.png'
+            for name in sprite_names
         }
         
         # Load sprites if using graphics
@@ -113,13 +122,13 @@ class PygameRenderer:
         fallback_tiles = {
             'player': (255, 255, 255),
             'ghost': (63, 127, 63),
-            'crab': (0, 127, 0),
+            'red_ghost': (0, 127, 0),
             'floor': (200, 180, 50),
             'dark_floor': (50, 50, 150),
             'wall': (130, 110, 50),
             'dark_wall': (0, 0, 100),
             'ladder': (255, 255, 0),
-            'chest': (127, 0, 255),
+            'wooden_box': (127, 0, 255),
         }
         
         for name, color in fallback_tiles.items():
@@ -162,11 +171,16 @@ class PygameRenderer:
                 pixel_y = y * self.tile_size
                 
                 # Determine what to render
+                tile_ch = game_map.tiles['light']['ch'][x, y] if game_map.visible[x, y] else game_map.tiles['dark']['ch'][x, y]
+                
                 if game_map.visible[x, y]:
                     # Visible area
                     if game_map.tiles['walkable'][x, y]:
                         # Floor
                         tile_surface = self.sprites.get('floor', self._create_colored_tile(self.color_map['floor_light']))
+                    elif tile_ch == ord(" "):  # Void tile (space character)
+                        # Void - render as black (skip rendering)
+                        continue
                     else:
                         # Wall
                         tile_surface = self.sprites.get('wall', self._create_colored_tile(self.color_map['wall_light']))
@@ -175,12 +189,20 @@ class PygameRenderer:
                     if game_map.tiles['walkable'][x, y]:
                         # Dark floor
                         tile_surface = self.sprites.get('dark_floor', self._create_colored_tile(self.color_map['floor_dark']))
+                    elif tile_ch == ord(" "):  # Void tile (space character)
+                        # Void - render as black (skip rendering)
+                        continue
                     else:
                         # Dark wall
                         tile_surface = self.sprites.get('dark_wall', self._create_colored_tile(self.color_map['wall_dark']))
                 else:
-                    # Unexplored (shroud)
-                    tile_surface = self._create_colored_tile(self.color_map['shroud'])
+                    # Unexplored 
+                    if tile_ch == ord(" "):  # Void tile (space character)
+                        # Void - render as black (skip rendering)
+                        continue
+                    else:
+                        # Shroud
+                        tile_surface = self._create_colored_tile(self.color_map['shroud'])
                 
                 surface.blit(tile_surface, (pixel_x, pixel_y))
                 
@@ -212,10 +234,10 @@ class PygameRenderer:
                     sprite_name = 'player'
                 elif entity.name == "Ghost":
                     sprite_name = 'ghost'
-                elif entity.name == "Crab":
-                    sprite_name = 'crab'
+                elif entity.name == "Red Ghost":
+                    sprite_name = 'red_ghost'
                 elif "Health Potion" in entity.name:
-                    sprite_name = 'chest'
+                    sprite_name = 'wooden_box'
                 
                 if sprite_name and sprite_name in self.sprites:
                     surface.blit(self.sprites[sprite_name], (pixel_x, pixel_y))
@@ -388,8 +410,9 @@ class PygameRenderer:
     
     def present(self):
         """Present the rendered surface to the screen."""
-        self.screen.blit(self.render_surface, (0, 0))
-        pygame.display.flip()
+        if not self.headless:
+            self.screen.blit(self.render_surface, (0, 0))
+            pygame.display.flip()
     
     def get_screenshot_bytes(self) -> bytes:
         """Get screenshot as raw PNG bytes with exact pixel dimensions."""

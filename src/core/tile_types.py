@@ -62,3 +62,11 @@ down_stairs = new_tile(
 	# light=(ord(">"), (255, 255, 255), (200, 180, 50)),
 )
 
+# VOID represents empty space (black areas)
+void = new_tile(
+	walkable=False,
+	transparent=False,
+	dark=(ord(" "), (0, 0, 0), (0, 0, 0)),  # Black space
+	light=(ord(" "), (0, 0, 0), (0, 0, 0)),  # Black space
+)
+

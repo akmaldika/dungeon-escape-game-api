@@ -8,6 +8,7 @@ import tcod
 from src.core import entity_factories
 from src.core.game_map import GameMap
 from src.core import tile_types
+from src.core.map_logger import get_map_logger
 
 
 if TYPE_CHECKING:
@@ -175,22 +176,51 @@ def generate_dungeon(
 		if any(new_room.intersects(other_room) for other_room in rooms):
 			continue
 
+		# Create walls around the room first
+		for x in range(new_room.x1, new_room.x2 + 1):
+			for y in range(new_room.y1, new_room.y2 + 1):
+				if (x == new_room.x1 or x == new_room.x2 or 
+					y == new_room.y1 or y == new_room.y2):
+					dungeon.tiles[x, y] = tile_types.wall
+		
+		# Then create the floor inside the room
 		dungeon.tiles[new_room.inner] = tile_types.floor
+
+		# Track this room as the most recently created room (for stairs)
+		center_of_last_room = new_room.center
 
 		if len(rooms) == 0:
 			player.place(*new_room.center, dungeon)
 		else:
+			# Create tunnels and walls around them
 			for x, y in tunnel_between(rooms[-1].center, new_room.center):
 				dungeon.tiles[x, y] = tile_types.floor
-
-			center_of_last_room = new_room.center
+				# Add walls around the tunnel
+				for dx in [-1, 0, 1]:
+					for dy in [-1, 0, 1]:
+						if dx == 0 and dy == 0:
+							continue  # Skip the tunnel tile itself
+						nx, ny = x + dx, y + dy
+						if (0 <= nx < dungeon.width and 0 <= ny < dungeon.height and 
+							dungeon.tiles[nx, ny] == tile_types.void):
+							dungeon.tiles[nx, ny] = tile_types.wall
 
 		place_entities(new_room, dungeon, engine.game_world.current_floor)
 
-		dungeon.tiles[center_of_last_room] = tile_types.down_stairs
-		dungeon.downstairs_location = center_of_last_room
-
 		rooms.append(new_room)
+
+	# After placing rooms, put the downstairs at the center of the last room
+	if rooms:
+		sx, sy = center_of_last_room
+		dungeon.tiles[sx, sy] = tile_types.down_stairs
+		dungeon.downstairs_location = (sx, sy)
+
+	# Log the generated map
+	try:
+		map_logger = get_map_logger()
+		map_logger.log_map(dungeon, "procedural", engine.game_world.current_floor)
+	except Exception as e:
+		print(f"Warning: Failed to log map: {e}")
 
 	return dungeon
 

@@ -124,13 +124,17 @@ Modes and semantics:
   - Loads an inline ASCII map from `custom_map`.
   - Same termination as `custom` (SPACE on stairs => victory).
 
+FOV configuration (optional fields supported in the request body):
+- `fov_mode`: `"partial"` (default) or `"all"` — when `all` everything is visible; when `partial` visibility is limited by `fov_radius`.
+- `fov_radius`: integer radius (only used when `fov_mode` is `partial`).
+
 ASCII map legend (for `mode=string`):
 - `#` = wall (blocked)
 - `.` = floor (walkable)
 - `@` = player start (recommended one occurrence)
 - `>` = stairs/exit (required for a solvable map)
 - `O` = ghost (enemy)
-- `T` = crab (enemy)
+- `T` = Red Ghost (enemy)
 - `h` = health potion (item)
 
 Constraints and notes:
@@ -146,7 +150,7 @@ Errors:
 
 Body:
 ```json
-{ "action": "w|a|s|d|up|down|left|right|g|i|space|." }
+{ "action": "w|a|s|d|up|down|left|right|g|i|space|.|esc|q" }
 ```
 
 Returns:
@@ -159,8 +163,12 @@ The API waits for the step to advance (or level to change) before returning, ens
 Errors:
 - 400: Invalid action key.
 - 400: No active game session.
+- 400: No active game session.
 
+- The endpoint returns after the turn is applied or a short timeout if no state change is detected.
 Notes:
+- The endpoint returns after the turn is applied or a short timeout if no state change is detected.
+- UI keys like `esc` and `q` are accepted; when the game is in a Game Over or Game Done state they will return to the main menu.
 - The endpoint returns after the turn is applied or a short timeout if no state change is detected.
 
 # Dungeon Escape Game API
@@ -265,7 +273,7 @@ Body options:
 - Custom predefined map file: `{ "mode": "custom" }`
 - Inline string map: `{ "mode": "string", "custom_map": "########\n#@..>..#\n########" }`
 
-Legend: `#` wall, `.` floor, `@` player, `>` stairs, `O` ghost, `T` crab, `h` health potion.
+Legend: `#` wall, `.` floor, `@` player, `>` stairs, `O` ghost, `T` red ghost, `h` health potion.
 
 Response matches GET /game-state.
 
@@ -340,6 +348,16 @@ curl -X GET "http://localhost:8000/game-screenshot" -I
 curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "procedural"}'
 ```
 
+**Procedural with FOV (partial):**
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "procedural", "fov_mode": "partial", "fov_radius": 8}'
+```
+
+**Procedural with FOV (all visible):**
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "procedural", "fov_mode": "all"}'
+```
+
 **Custom Predefined Map:**
 ```bash
 curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "custom"}'
@@ -347,8 +365,20 @@ curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/js
 
 **Custom String Map:**
 ```bash
-curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "string", "custom_map": "##########\n#@.......#\n#.......h#\n#...O....#\n#........#\n#.......>#\n##########"}'
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "string", "custom_map": "################\n#.............>#\n#####.##########\n    #.#\n    #.#\n    #.#\n#####.##\n#@.....#\n########"}'
 ```
+
+**String map with FOV radius 6:**
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "string", "custom_map": "##########\n#@.......#\n#.......h#\n#...O....#\n#........#\n#.......>#\n##########", "fov_mode": "partial", "fov_radius": 6}'
+```
+
+```bash
+curl -X POST "http://localhost:8000/start-game" -H "Content-Type: application/json" -d '{"mode": "string", "custom_map": "##############\n#@.....#.....#\n#..#......#..#\n#..#......#..#\n#..#...#.....#\n#......#.....#\n#.....>#.....#\n#............#\n#..#...#.....#\n##############", "fov_mode":"all"}'
+```
+
+
+
 
 ### 6. Perform Actions
 

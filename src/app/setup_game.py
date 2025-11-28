@@ -16,6 +16,7 @@ from src.core import entity_factories
 from src.core.game_map import GameWorld
 from src.core import input_handlers
 from src.core.custom_map_loader import load_custom_map, load_custom_map_from_string
+from src.core.map_logger import get_map_logger
 
 
 # Load the background image with Pillow and ensure it's RGB (no alpha channel).
@@ -23,18 +24,14 @@ bg_img = Image.open("assets/menu_background.png").convert("RGB")
 background_image = np.asarray(bg_img, dtype=np.uint8)
 
 
-def new_game(use_custom_map=False, custom_map_file="", custom_map_string="") -> Engine:
+def new_game(use_custom_map=False, custom_map_file="", custom_map_string="", 
+             max_rooms=30, room_min_size=4, room_max_size=6, map_width=30, map_height=30,
+             fov_mode="partial", fov_radius=8) -> Engine:
 	"""Return a brand new game session as an Engine instance."""
-	map_width = 30
-	map_height = 30
-
-	room_max_size = 6
-	room_min_size = 4
-	max_rooms = 30
 
 	player = copy.deepcopy(entity_factories.player)
 
-	engine = Engine(player=player)
+	engine = Engine(player=player, fov_mode=fov_mode, fov_radius=fov_radius)
 	engine.is_using_custom_map = use_custom_map or bool(custom_map_string)  # Set the flag
 
 	if custom_map_string:
@@ -49,6 +46,14 @@ def new_game(use_custom_map=False, custom_map_file="", custom_map_string="") -> 
 		)
 		engine.game_world.current_floor = 1  # Set to 1 for custom maps
 		engine.game_map = load_custom_map_from_string(custom_map_string, engine)
+		
+		# Log string map
+		try:
+			map_logger = get_map_logger()
+			map_logger.log_map(engine.game_map, "string", 1)
+		except Exception as e:
+			print(f"Warning: Failed to log string map: {e}")
+			
 	elif use_custom_map:
 		# Load from file
 		engine.game_world = GameWorld(
@@ -61,6 +66,14 @@ def new_game(use_custom_map=False, custom_map_file="", custom_map_string="") -> 
 		)
 		engine.game_world.current_floor = 1  # Set to 1 for custom maps
 		engine.game_map = load_custom_map(custom_map_file, engine)
+		
+		# Log custom map
+		try:
+			map_logger = get_map_logger()
+			map_logger.log_map(engine.game_map, "custom", 1)
+		except Exception as e:
+			print(f"Warning: Failed to log custom map: {e}")
+			
 	else:
 		# Generate procedurally
 		engine.game_world = GameWorld(

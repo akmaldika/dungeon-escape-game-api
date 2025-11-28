@@ -5,7 +5,17 @@ Logic unchanged; imports prefer src.* modules.
 
 This file can be run two ways:
 - Recommended: from project root -> `py -m src.main`
-- Supported: directly -> `py src\main.py` (we insert parent dir into sys.path)
+- Supported: directly -> `py src/main.py` (we insert parent dir into sys.path)
+
+Command-line arguments:
+- tile-size=8 or tile-size=16 (default: 16)
+  Example: python src/main.py tile-size=8
+  
+- port=8000-65535 (default: 8000)
+  Example: python src/main.py port=8001
+  
+Combined example:
+  python src/main.py tile-size=8 port=8001
 """
 
 import traceback
@@ -14,6 +24,7 @@ import time
 from typing import Optional, Dict, List, Any, Tuple, cast
 import queue
 import io
+import argparse
 from PIL import Image
 
 import uvicorn
@@ -25,6 +36,8 @@ import pygame
 
 # Ensure project root is on sys.path when running this file directly
 import os, sys
+import signal
+
 _THIS_DIR = os.path.dirname(__file__)
 _PROJECT_ROOT = os.path.dirname(_THIS_DIR)
 if _PROJECT_ROOT not in sys.path:
@@ -39,96 +52,38 @@ from src.core.engine import Engine as CoreEngine
 from src.rendering.pygame_renderer import PygameRenderer, PygameEventConverter
 
 from src.api.state import ThreadSafeGameState
-from src.api.observation import build_observation_payload
-from src.api.schemas import (
-    StartGameRequest,
-    PerformActionRequest,
-    GameStateResponse,
-    PerformActionResponse,
-    ObservationResponse,
-)
+
 from src.api.app import create_app
 from src.api.config import get_server_settings
+from src.api.sprite_config import (
+    DEFAULT_SPRITE_SIZE,
+    SUPPORTED_SPRITE_SIZES,
+    validate_sprite_directory,
+)
+from src.api.port_config import (
+    DEFAULT_PORT,
+    MIN_PORT,
+    MAX_PORT,
+    validate_port,
+    is_port_available,
+)
 
 
 game_state = ThreadSafeGameState()
+# Initialize with defaults; will be updated in main()
 host, port, cors = get_server_settings()
 app = create_app(game_state, cors_origins=cors)
 
 
-@app.get("/game-info")
-async def get_game_info():
-    tile_size = game_state.renderer.tile_size if game_state.renderer else 16
-    def sprite_url(name: str) -> str:
-        return f"/sprite/{name}.png"
 
-    dirs = ["w","a","s","d","up","down","left","right"]
-    return {
-        "Player": {
-            "type": "player",
-            "capabilities": ["moves", "uses_items"],
-            "interactions": [
-                {"pickup": "g"},
-                {"use_potion": "i"},
-                {"wait": "."}
-            ],
-            "image_url": sprite_url("player"),
-            "tile_size": tile_size,
-        },
-        "Ghost": {
-            "type": "enemy",
-            "stats": {"health": 10, "power": 2},
-            "capabilities": ["hostile", "moves", "attacks_on_bump"],
-            "interactions": [
-                {"bumpable": dirs},
-                {"attackable": dirs}
-            ],
-            "image_url": sprite_url("ghost"),
-            "tile_size": tile_size,
-        },
-        "Crab": {
-            "type": "enemy",
-            "stats": {"health": 15, "power": 8},
-            "capabilities": ["hostile", "moves", "attacks_on_bump"],
-            "interactions": [
-                {"bumpable": dirs},
-                {"attackable": dirs}
-            ],
-            "image_url": sprite_url("crab"),
-            "tile_size": tile_size,
-        },
-        "Health Potion": {
-            "type": "item",
-            "stats": {"heal_amount": 5},
-            "capabilities": ["consumable"],
-            "interactions": [{"consumable": "i"}],
-            "image_url": sprite_url("chest"),
-            "tile_size": tile_size,
-        },
-        "Ladder": {
-            "type": "tile",
-            "capabilities": ["actionable"],
-            "interactions": [{"actionable": "space"}],
-            "image_url": sprite_url("ladder"),
-            "tile_size": tile_size,
-        },
-        "Wall": {
-            "type": "tile",
-            "capabilities": ["blocks_movement"],
-            "image_url": sprite_url("wall"),
-            "tile_size": tile_size,
-        },
-        "Floor": {
-            "type": "tile",
-            "capabilities": ["walkable"],
-            "image_url": sprite_url("floor"),
-            "tile_size": tile_size,
-        },
-    }
 
 
 def run_api_server():
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    config = uvicorn.Config(app, host=host, port=port, log_level="info")
+    server = uvicorn.Server(config)
+    # Disable signal handlers so main thread can handle Ctrl+C
+    server.install_signal_handlers = lambda: None
+    server.run()
 
 
 def process_api_actions(handler: input_handlers.BaseEventHandler) -> input_handlers.BaseEventHandler:
@@ -138,12 +93,55 @@ def process_api_actions(handler: input_handlers.BaseEventHandler) -> input_handl
             if action_key.startswith("restart_"):
                 parts = action_key.split("_", 1)
                 mode = parts[1]
-                if mode == "custom":
+                if mode.startswith("custom|"):
+                    # Parse custom mode with FOV: "custom|partial,8"
+                    fov_parts = mode[7:].split(",") if "|" in mode else ["partial", "8"]
+                    fov_mode = fov_parts[0] if len(fov_parts) > 0 else "partial"
+                    fov_radius = int(fov_parts[1]) if len(fov_parts) > 1 else 8
+                    test_map = "custom_map.txt"
+                    engine: CoreEngine = cast(CoreEngine, setup_game.new_game(
+                        use_custom_map=True, custom_map_file=test_map,
+                        fov_mode=fov_mode, fov_radius=fov_radius
+                    ))
+                elif mode == "custom":
+                    # Fallback for old format
                     test_map = "custom_map.txt"
                     engine: CoreEngine = cast(CoreEngine, setup_game.new_game(use_custom_map=True, custom_map_file=test_map))
                 elif mode.startswith("string|"):
-                    custom_map_string = mode[7:]
-                    engine: CoreEngine = cast(CoreEngine, setup_game.new_game(custom_map_string=custom_map_string))
+                    # Parse string mode: "string|map_data|partial,8"
+                    parts = mode[7:].split("|")
+                    custom_map_string = parts[0]
+                    if len(parts) > 1:
+                        fov_parts = parts[1].split(",")
+                        fov_mode = fov_parts[0] if len(fov_parts) > 0 else "partial"
+                        fov_radius = int(fov_parts[1]) if len(fov_parts) > 1 else 8
+                    else:
+                        fov_mode, fov_radius = "partial", 8
+                    engine: CoreEngine = cast(CoreEngine, setup_game.new_game(
+                        custom_map_string=custom_map_string,
+                        fov_mode=fov_mode, fov_radius=fov_radius
+                    ))
+                elif mode.startswith("procedural|"):
+                    # Parse procedural parameters: "procedural|30,4,6,30,30,partial,8"
+                    param_string = mode[11:]  # Remove "procedural|"
+                    try:
+                        parts = param_string.split(",")
+                        max_rooms, room_min_size, room_max_size, map_width, map_height = map(int, parts[:5])
+                        fov_mode = parts[5] if len(parts) > 5 else "partial"
+                        fov_radius = int(parts[6]) if len(parts) > 6 else 8
+                        engine: CoreEngine = cast(CoreEngine, setup_game.new_game(
+                            use_custom_map=False,
+                            max_rooms=max_rooms,
+                            room_min_size=room_min_size,
+                            room_max_size=room_max_size,
+                            map_width=map_width,
+                            map_height=map_height,
+                            fov_mode=fov_mode,
+                            fov_radius=fov_radius
+                        ))
+                    except (ValueError, TypeError):
+                        # Fallback to defaults if parsing fails
+                        engine: CoreEngine = cast(CoreEngine, setup_game.new_game(use_custom_map=False))
                 else:
                     engine: CoreEngine = cast(CoreEngine, setup_game.new_game(use_custom_map=False))
                 new_handler = input_handlers.MainGameEventHandler(engine)  # type: ignore[arg-type]
@@ -166,6 +164,8 @@ def process_api_actions(handler: input_handlers.BaseEventHandler) -> input_handl
                 'g': tcod.event.KeySym.G,
                 'i': tcod.event.KeySym.I,
                 '.': tcod.event.KeySym.PERIOD,
+                'esc': tcod.event.KeySym.ESCAPE,
+                'q': tcod.event.KeySym.Q,
             }
             if action_key in key_mapping:
                 game_state.check_and_reset_level_steps()
@@ -188,21 +188,147 @@ def process_api_actions(handler: input_handlers.BaseEventHandler) -> input_handl
     return handler
 
 
-def _build_observation_payload() -> Dict[str, Any]:
-    return build_observation_payload(game_state)
 
 
-@app.get("/observation", response_model=ObservationResponse)
-async def observation():
-    return _build_observation_payload()
+
+def _resolve_port_value(port_val: int) -> int:
+    is_valid, msg = validate_port(port_val)
+    if not is_valid:
+        print(f"Error: Invalid port {port_val}. {msg}")
+        print(f"       Valid range: {MIN_PORT}-{MAX_PORT}")
+        sys.exit(1)
+
+    if msg:
+        print(msg)
+
+    if not is_port_available(port_val):
+        print(f"Error: Port {port_val} is already in use.")
+        print(f"       Try a different port (e.g., port={port_val + 1})")
+        sys.exit(1)
+
+    print(f"Using port {port_val}")
+    return port_val
+
+
+def _resolve_tile_size_value(size: int) -> int:
+    if size not in SUPPORTED_SPRITE_SIZES:
+        print(
+            f"Error: Unsupported tile size {size}. "
+            f"Supported sizes: {SUPPORTED_SPRITE_SIZES}"
+        )
+        sys.exit(1)
+
+    if not validate_sprite_directory(size):
+        print(
+            f"Error: Sprite directory for {size}px not found. "
+            f"Available sprite directories: {SUPPORTED_SPRITE_SIZES}"
+        )
+        sys.exit(1)
+
+    print(f"Using {size}px sprites")
+    return size
+
+
+def parse_port(args: List[str], cli_value: Optional[int] = None) -> int:
+    """Parse port from command-line arguments.
+
+    Supports two formats:
+    - Flag style: --port 8001 / -p 8001 (handled via cli_value)
+    - Legacy style: port=8001
+    """
+    if cli_value is not None:
+        return _resolve_port_value(cli_value)
+
+    for arg in args:
+        if arg.startswith("port="):
+            try:
+                port_val = int(arg.split("=", 1)[1])
+                return _resolve_port_value(port_val)
+            except (ValueError, IndexError):
+                print(f"Error: Invalid port format. Use: --port 8001 or port=8001")
+                sys.exit(1)
+
+    return DEFAULT_PORT
+
+
+def parse_tile_size(args: List[str], cli_value: Optional[int] = None) -> int:
+    """Parse tile-size from command-line arguments.
+
+    Supports two formats:
+    - Flag style: --tile-size 8 / -t 8 (handled via cli_value)
+    - Legacy style: tile-size=8
+    """
+    if cli_value is not None:
+        return _resolve_tile_size_value(cli_value)
+
+    for arg in args:
+        if arg.startswith("tile-size="):
+            try:
+                size = int(arg.split("=", 1)[1])
+                return _resolve_tile_size_value(size)
+            except (ValueError, IndexError):
+                print(f"Error: Invalid tile-size format. Use: --tile-size 8 or tile-size=8")
+                sys.exit(1)
+
+    return DEFAULT_SPRITE_SIZE
+
+
+def parse_arguments(args: List[str]) -> Tuple[int, int, bool]:
+    parser = argparse.ArgumentParser(
+        description="Configure the roguelike renderer and API server",
+        add_help=True,
+        allow_abbrev=False,
+    )
+    parser.add_argument(
+        "-p", "--port",
+        type=int,
+        help=f"API port between {MIN_PORT} and {MAX_PORT} (default {DEFAULT_PORT})",
+    )
+    parser.add_argument(
+        "-t", "--tile-size",
+        type=int,
+        choices=list(SUPPORTED_SPRITE_SIZES),
+        help=f"Tile size in pixels (default {DEFAULT_SPRITE_SIZE})",
+    )
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run in headless mode (no window) for AI benchmarking",
+    )
+
+    known_args, legacy_args = parser.parse_known_args(args)
+
+    tile_size = parse_tile_size(legacy_args, cli_value=known_args.tile_size)
+    port = parse_port(legacy_args, cli_value=known_args.port)
+    
+    # Check for headless flag in remaining args or known args
+    headless = "--headless" in args or "-h" in args # Simple check for now, or better:
+    
+    return tile_size, port, known_args.headless
+
+
+def handle_sigint(signum, frame):
+    print(f"\nReceived signal {signum}, stopping game...")
+    game_state.is_running = False
 
 
 def main() -> None:
+    global host, port  # Update global port for run_api_server
+    
+    # Parse command-line arguments for tile size and port
+    tile_size, port, headless = parse_arguments(sys.argv[1:])
+
+    # Register signal handlers
+    signal.signal(signal.SIGINT, handle_sigint)
+    signal.signal(signal.SIGTERM, handle_sigint)
+    
     screen_width = 60
     screen_height = 40
-    tile_size = 16
-    renderer = PygameRenderer(screen_width, screen_height, tile_size)
-    print(f"Pygame renderer initialized: {screen_width}x{screen_height} tiles, {tile_size}x{tile_size} pixels per tile")
+    renderer = PygameRenderer(screen_width, screen_height, tile_size, headless=headless)
+    if headless:
+        print(f"Pygame renderer initialized in HEADLESS mode")
+    else:
+        print(f"Pygame renderer initialized: {screen_width}x{screen_height} tiles, {tile_size}x{tile_size} pixels per tile")
     handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
     api_thread = threading.Thread(target=run_api_server, daemon=True)
     api_thread.start()

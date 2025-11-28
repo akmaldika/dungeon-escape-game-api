@@ -96,6 +96,8 @@ class ThreadSafeGameState:
                 "player_standing_on": self.engine.get_player_tile_type(),
                 "player_health": self.engine.player.fighter.hp,
                 "health_potion_count": health_potion_count,
+                "player_position": [self.engine.player.x, self.engine.player.y],
+                "stairs": getattr(self.engine.game_map, 'downstairs_location', None),
                 "is_done": is_done,
                 "end_reason": end_reason,
                 "legal_actions": legal_actions
@@ -127,7 +129,13 @@ def _on_stairs(engine) -> bool:
         return False
     px, py = engine.player.x, engine.player.y
     stairs = getattr(engine.game_map, 'downstairs_location', None)
-    return bool(stairs and (px, py) == stairs)
+    if not stairs:
+        return False
+    sx, sy = stairs
+    dx = abs(px - sx)
+    dy = abs(py - sy)
+    # True only if on the stairs tile (no adjacency)
+    return (dx == 0 and dy == 0)
 
 
 def _has_item_underfoot(engine) -> bool:
@@ -142,6 +150,9 @@ def _has_item_underfoot(engine) -> bool:
 
 def _has_potion(engine) -> bool:
     if not engine:
+        return False
+    # Check if player has health potion AND health is not at maximum
+    if engine.player.fighter.hp >= engine.player.fighter.max_hp:
         return False
     for it in engine.player.inventory.items:
         if getattr(it, 'consumable', None) and 'Health Potion' in it.name:
@@ -166,7 +177,7 @@ def _can_bump(engine, dx: int, dy: int) -> bool:
 
 def compute_legal_actions_unlocked(engine) -> List[str]:
     """Compute legal action keys based on current engine state.
-    Returns keys from set: w/a/s/d, up/left/down/right, g, i, space, .
+    Returns keys from set: w/a/s/d, g, i, space, .
     """
     if not engine or not hasattr(engine, 'player'):
         return []
@@ -178,10 +189,9 @@ def compute_legal_actions_unlocked(engine) -> List[str]:
         'a': (-1, 0),
         'd': (1, 0),
     }
-    arrow_map = {'w': 'up', 'a': 'left', 's': 'down', 'd': 'right'}
     for k, (dx, dy) in dirs.items():
         if _can_bump(engine, dx, dy):
-            legal.extend([k, arrow_map[k]])
+            legal.append(k)
     if _has_item_underfoot(engine):
         legal.append('g')
     if _has_potion(engine):
@@ -189,6 +199,10 @@ def compute_legal_actions_unlocked(engine) -> List[str]:
     if _on_stairs(engine):
         legal.append('space')
     legal.append('.')  # wait always allowed
+    # Add UI-level keys for non-gameplay states (allow returning to menu)
+    if getattr(engine, 'game_done', False) or not engine.player.is_alive:
+        legal.append('esc')
+        legal.append('q')
     # Dedupe preserve order
     seen = set()
     result: List[str] = []

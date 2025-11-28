@@ -1,7 +1,6 @@
-tcod>=11.15
-numpy>=1.18
-imageio>=2.36
-pillow
+tcod
+numpy
+imageio
+Pillow
 pygame
-fastapi>=0.104.0
-uvicorn>=0.24.0
+fastapi[standard]

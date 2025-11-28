@@ -5,7 +5,7 @@ from game_map import GameMap
 
 def load_custom_map_from_string(map_string, engine):
     """Load a map from a string representation."""
-    lines = map_string.strip().split('\n')
+    lines = map_string.split('\n')
     
     height = len(lines)
     width = max(len(line) for line in lines)
@@ -31,7 +31,7 @@ def load_custom_map_from_string(map_string, engine):
                 ghost.place(x, y, game_map)
                 game_map.entities.add(ghost)
             elif char == "T":
-                # Monster type 1 (enemy strong) - Troll/Crab
+                # Monster type 1 (enemy strong) - Red Ghost
                 game_map.tiles[x, y] = tile_types.floor
                 troll = copy.deepcopy(entity_factories.troll)
                 troll.place(x, y, game_map)
@@ -73,7 +73,7 @@ def load_custom_map(filename, engine):
                 ghost.place(x, y, game_map)
                 game_map.entities.add(ghost)
             elif char == "T":
-                # Monster type 1 (enemy strong) - Troll/Crab
+                # Monster type 1 (enemy strong) - Red/Ghost
                 game_map.tiles[x, y] = tile_types.floor
                 troll = copy.deepcopy(entity_factories.troll)
                 troll.place(x, y, game_map)

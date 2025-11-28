@@ -31,11 +31,11 @@ ghost = Actor(
     level=Level(),
 )
 
-troll = Actor(
+red_ghost = Actor(
     char=0x100002,
     # color=(0, 127, 0),
     color=(71, 108, 108),
-    name="Crab",
+    name="Red Ghost",
     ai_cls=HostileEnemy,
 
     fighter=Fighter(hp=15, base_power=8),

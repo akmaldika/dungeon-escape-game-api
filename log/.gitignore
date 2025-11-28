@@ -1,0 +1,11 @@
+# Ignore all generated map files
+procedural/
+string/
+custom/
+data.json
+
+# Ignore API logs
+api_actions.log
+
+# Keep folder structure
+!.gitignore

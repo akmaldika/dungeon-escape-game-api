@@ -66,27 +66,7 @@ def create_router(game_state: ThreadSafeGameState) -> APIRouter:
                 "map_height_pixels": map_height_tiles * tile_size,
             }
 
-    @router.get("/sprite/{name}.png")  # type: ignore[misc]
-    async def get_sprite(name: str):
-        renderer = game_state.renderer
-        if not renderer:
-            raise HTTPException(status_code=400, detail="Renderer not initialized")
 
-        key = name.lower().replace('.png', '')
-        alias = {"stairs": "ladder", "potion": "chest", "health_potion": "chest"}
-        key = alias.get(key, key)
-
-        surface = renderer.sprites.get(key)
-        if surface is None:
-            surface = pygame.Surface((renderer.tile_size, renderer.tile_size))
-            surface.fill((128, 128, 128))
-
-        raw = pygame.image.tostring(surface, 'RGB')
-        img = Image.frombytes('RGB', (renderer.tile_size, renderer.tile_size), raw)
-        buf = io.BytesIO()
-        img.save(buf, format='PNG')
-        buf.seek(0)
-        return Response(content=buf.getvalue(), media_type="image/png", headers={"X-Tile-Size": str(renderer.tile_size)})
 
     return router
 
