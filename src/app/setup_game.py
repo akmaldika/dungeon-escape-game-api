@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import copy
-from typing import Optional
 
 import tcod
 from tcod import libtcodpy
@@ -144,7 +143,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
 	def ev_keydown(
 		self, event: tcod.event.KeyDown
-	) -> Optional[input_handlers.BaseEventHandler]:
+	) -> input_handlers.BaseEventHandler | None:
 		if event.sym in (tcod.event.KeySym.Q, tcod.event.KeySym.ESCAPE):
 			raise SystemExit()
 		elif event.sym == tcod.event.KeySym.N:
