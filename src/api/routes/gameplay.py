@@ -26,8 +26,11 @@ from ..schemas import (
 from ..state import ThreadSafeGameState
 
 
+from ..services.action_service import GameActionService
+
 def create_router(game_state: ThreadSafeGameState) -> APIRouter:
     router = APIRouter()
+    action_service = GameActionService(game_state)
 
     @router.post("/start-game", response_model=GameStateResponse)  # type: ignore[misc]
     async def start_game(request: StartGameRequest):
@@ -37,28 +40,24 @@ def create_router(game_state: ThreadSafeGameState) -> APIRouter:
         if request.mode == "string" and not request.custom_map:
             raise HTTPException(status_code=400, detail="custom_map is required when mode is 'string'")
 
+        action_key = ""
         # Queue a restart action - this will be handled by the main game loop
         if request.mode == "string":
             # Include FOV parameters for string mode
             fov_params = f"{request.fov_mode},{request.fov_radius}"
-            game_state.queue_action(f"restart_string|{request.custom_map}|{fov_params}")
+            action_key = f"restart_string|{request.custom_map}|{fov_params}"
         elif request.mode == "procedural":
             # Include procedural and FOV parameters
             params = f"{request.max_rooms},{request.room_min_size},{request.room_max_size},{request.map_width},{request.map_height},{request.fov_mode},{request.fov_radius}"
-            game_state.queue_action(f"restart_procedural|{params}")
+            action_key = f"restart_procedural|{params}"
         else:
             # Include FOV parameters for custom mode
             fov_params = f"{request.fov_mode},{request.fov_radius}"
-            game_state.queue_action(f"restart_{request.mode}|{fov_params}")
+            action_key = f"restart_{request.mode}|{fov_params}"
 
-        # Wait deterministically for the game to restart
-        deadline = time.monotonic() + 0.5
-        state = None
-        while time.monotonic() < deadline:
-            state = game_state.get_state_snapshot()
-            if state:
-                break
-            time.sleep(0.01)
+        # Use ActionService to queue and wait
+        state = action_service.queue_and_wait(action_key)
+        
         if not state:
             raise HTTPException(status_code=500, detail="Failed to start game")
         return state
@@ -94,27 +93,12 @@ def create_router(game_state: ThreadSafeGameState) -> APIRouter:
             ua,
         )
 
-        # Queue the action for the main game loop
+        # Use ActionService to queue and wait
         action_lower = request.action.lower()
-        game_state.queue_action(action_lower)
+        state = action_service.queue_and_wait(action_lower)
+        
         logger.info("perform-action queued: action=%s; client=%s", action_lower, client_host)
 
-        # Wait deterministically for step advancement or dungeon change
-        prev = None
-        first = game_state.get_state_snapshot()
-        if first:
-            prev = (first.get("current_level_step_count"), first.get("dungeon_level"))
-        deadline = time.monotonic() + 0.5
-        state = first
-        while time.monotonic() < deadline:
-            state = game_state.get_state_snapshot()
-            if not state:
-                break
-            if prev is None:
-                break
-            if (state.get("current_level_step_count"), state.get("dungeon_level")) != prev:
-                break
-            time.sleep(0.01)
         if not state:
             raise HTTPException(status_code=400, detail="No active game session")
 
@@ -122,8 +106,6 @@ def create_router(game_state: ThreadSafeGameState) -> APIRouter:
             "action_executed": request.action,
             "state_changes": state,
         }
-
-
 
     return router
 
