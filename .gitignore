@@ -13,7 +13,7 @@ ehthumbs_vista.db
 __pycache__
 
 # Python virtual environment
-venv
+.venv
 
 # Saved games
 *.sav
