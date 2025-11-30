@@ -85,7 +85,7 @@ def test_start_game_string():
     map_str = (
         "#####\n"
         "#@..#\n"
-        "#...#\n"
+        "#..>#\n"
         "#####"
     )
     payload = {
@@ -106,7 +106,7 @@ def test_start_game_string_with_enemies():
     map_str = (
         "#####\n"
         "#@.G#\n"
-        "#.R.#\n"
+        "#.R>#\n"
         "#####"
     )
     payload = {
@@ -128,7 +128,7 @@ def test_perform_action_movement():
     map_str = (
         "#####\n"
         "#@..#\n"
-        "#...#\n"
+        "#..>#\n"
         "#####"
     )
     requests.post(f"{BASE_URL}/start-game", json={"mode": "string", "custom_map": map_str})

@@ -46,12 +46,8 @@ class Engine:
 
     def handle_enemy_turns(self) -> None:
         """Handle the turns of all enemies (non-player actors)."""
-        for entity in set(self.game_map.actors) - {self.player}:
-            if entity.ai:
-                try:
-                    entity.ai.perform()
-                except exceptions.Impossible:
-                    pass  # Ignore impossible action exceptions from AI.
+        from src.core.turn_manager import TurnManager
+        TurnManager(self).handle_enemy_turns()
 
     def update_fov(self) -> None:
         """Recompute the visible area based on the player's point of view."""
