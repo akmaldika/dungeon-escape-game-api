@@ -4,9 +4,9 @@ from typing import Optional, TYPE_CHECKING
 
 from src.core import actions
 from src.core import color
-from src.core.components import ai as components_ai
-from src.core.components import inventory as components_inventory
-from src.core.components.base_component import BaseComponent
+from src.components import ai as components_ai
+from src.components import inventory as components_inventory
+from src.components.base_component import BaseComponent
 from src.core.exceptions import Impossible
 from src.core.input_handlers import (
 	ActionOrHandler,

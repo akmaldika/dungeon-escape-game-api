@@ -1,8 +1,8 @@
-from src.core.components.ai import HostileEnemy
-from src.core.components import consumable
-from src.core.components.fighter import Fighter
-from src.core.components.inventory import Inventory
-from src.core.components.level import Level
+from src.components.ai import HostileEnemy
+from src.components import consumable
+from src.components.fighter import Fighter
+from src.components.inventory import Inventory
+from src.components.level import Level
 from src.core.entity import Actor, Item
 
 player = Actor(

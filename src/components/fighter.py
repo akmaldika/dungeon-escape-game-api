@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from src.core import color
-from src.core.components.base_component import BaseComponent
+from src.components.base_component import BaseComponent
 from src.core.render_order import RenderOrder
 
 if TYPE_CHECKING:

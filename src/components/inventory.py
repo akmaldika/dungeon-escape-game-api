@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, TYPE_CHECKING
 
-from src.core.components.base_component import BaseComponent
+from src.components.base_component import BaseComponent
 
 if TYPE_CHECKING:
 	from src.core.entity import Actor, Item
