@@ -5,18 +5,24 @@ from typing import List, TYPE_CHECKING
 from src.components.base_component import BaseComponent
 
 if TYPE_CHECKING:
-	from src.entities.entity import Actor, Item
+    from src.entities.entity import Actor, Item
 
 
 class Inventory(BaseComponent["Actor"]):
+    """
+    Component for managing an entity's inventory.
+    """
 
-	def __init__(self, capacity: int):
-		self.capacity = capacity
-		self.items: List['Item'] = []
+    def __init__(self, capacity: int):
+        self.capacity = capacity
+        self.items: List[Item] = []
 
-	def drop(self, item: 'Item') -> None:
-		self.items.remove(item)
-		item.place(self.parent.x, self.parent.y, self.gamemap)
+    def drop(self, item: Item) -> None:
+        """
+        Removes an item from the inventory and restores it to the game map
+        at the entity's current location.
+        """
+        self.items.remove(item)
+        item.place(self.parent.x, self.parent.y, self.gamemap)
 
-		self.engine.message_log.add_message(f"You dropped the {item.name}.")
-
+        self.engine.message_log.add_message(f"You dropped the {item.name}.")
