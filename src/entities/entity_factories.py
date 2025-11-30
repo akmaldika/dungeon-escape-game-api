@@ -16,7 +16,7 @@ player = Actor(
 )
 
 ghost = Actor(
-	char=0x100001,
+	char=ord("G"),
 	color=(71, 108, 108),
 	name="Ghost",
 	ai_cls=HostileEnemy,
@@ -25,8 +25,8 @@ ghost = Actor(
 	level=Level(),
 )
 
-troll = Actor(
-	char=0x100002,
+red_ghost = Actor(
+	char=ord("R"),
 	color=(71, 108, 108),
 	name="Red Ghost",
 	ai_cls=HostileEnemy,

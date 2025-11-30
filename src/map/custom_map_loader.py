@@ -7,8 +7,8 @@ Character Mapping:
     (space) = void (black space, luar map)
     @ = Player (starting position)
     > = Stairs (down stairs ke floor berikutnya)
-    O = Ghost (musuh basic)
-    T = Red Ghost / Troll (musuh kuat)
+    G = Ghost (musuh basic)
+    R = Red Ghost (musuh kuat)
     h = Health Potion (item consumable)
 """
 import copy
@@ -56,16 +56,16 @@ def load_custom_map_from_string(map_string, engine):
 				# Stairs down
 				game_map.tiles[x, y] = tile_types.down_stairs
 				game_map.downstairs_location = (x, y)
-			elif char == "O":
+			elif char == "G":
 				# Ghost enemy
 				game_map.tiles[x, y] = tile_types.floor
 				ghost = copy.deepcopy(entity_factories.ghost)
 				ghost.place(x, y, game_map)
 				game_map.entities.add(ghost)
-			elif char == "T":
-				# Red Ghost / Troll enemy
+			elif char == "R":
+				# Red Ghost (musuh kuat)
 				game_map.tiles[x, y] = tile_types.floor
-				red_ghost = copy.deepcopy(entity_factories.troll)
+				red_ghost = copy.deepcopy(entity_factories.red_ghost)
 				red_ghost.place(x, y, game_map)
 				game_map.entities.add(red_ghost)
 			elif char == "h":

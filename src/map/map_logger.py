@@ -92,8 +92,8 @@ class MapLogger:
 		  = void (space)
 		@ = player
 		> = stairs
-		O = Ghost
-		T = Red Ghost (Troll)
+		G = Ghost
+		R = Red Ghost
 		h = Health Potion
 		"""
 		from src.map import tile_types
@@ -131,9 +131,9 @@ class MapLogger:
 				if entity.name == "Player":
 					return '@'
 				elif entity.name == "Ghost":
-					return 'O'
+					return 'G'
 				elif entity.name == "Red Ghost":
-					return 'T'
+					return 'R'
 				elif entity.name == "Health Potion":
 					return 'h'
 		return None

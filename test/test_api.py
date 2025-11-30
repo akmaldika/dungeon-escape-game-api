@@ -101,6 +101,27 @@ def test_start_game_string():
     # Player should be at (1, 1) based on map
     assert data["player_position"] == [1, 1]
 
+def test_start_game_string_with_enemies():
+    """Test starting a game from a string map with enemies (G and R)."""
+    map_str = (
+        "#####\n"
+        "#@.G#\n"
+        "#.R.#\n"
+        "#####"
+    )
+    payload = {
+        "mode": "string",
+        "custom_map": map_str,
+        "fov_mode": "all"
+    }
+    resp = requests.post(f"{BASE_URL}/start-game", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    # We can't easily check entities from the response unless we add an endpoint or check the logs/state deeply.
+    # But if it crashes, status_code won't be 200.
+    # We can check if the game started successfully.
+    assert "dungeon_level" in data
+
 def test_perform_action_movement():
     """Test moving the player."""
     # Start a known map to ensure movement is valid
