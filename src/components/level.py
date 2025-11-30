@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from src.components.base_component import BaseComponent
 if TYPE_CHECKING:
-	from src.core.entity import Actor
+	from src.entities.entity import Actor
 
 
 class Level(BaseComponent["Actor"]):

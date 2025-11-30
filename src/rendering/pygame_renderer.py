@@ -13,20 +13,11 @@ import os
 from typing import Dict, Tuple, Optional, List
 
 # Game imports
-try:
-    from src.core import color, tile_types, entity_factories
-    from src.core.render_order import RenderOrder
-    from src.api.sprite_config import get_sprite_directory, DEFAULT_SPRITE_SIZE # type: ignore #
-except Exception:
-    # Fallback during migration
-    import color
-    import tile_types
-    import entity_factories
-    from render_order import RenderOrder
-    # Inline fallback for sprite config during development/migration
-    DEFAULT_SPRITE_SIZE = 16
-    def get_sprite_directory(sprite_size):
-        return "assets/16x16" if sprite_size == 16 else "assets/8x8"
+from src.core import color
+from src.map import tile_types
+from src.entities import entity_factories
+from src.entities.render_order import RenderOrder
+from src.api.sprite_config import get_sprite_directory, DEFAULT_SPRITE_SIZE
 
 class PygameRenderer:
     """Pygame-based renderer for the game."""

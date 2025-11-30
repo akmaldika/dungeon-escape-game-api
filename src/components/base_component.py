@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, TypeVar, Generic
 
 if TYPE_CHECKING:
 	from src.core.engine import Engine
-	from src.core.entity import Entity
-	from src.core.game_map import GameMap
+	from src.entities.entity import Entity
+	from src.map.game_map import GameMap
 
 
 TParent = TypeVar("TParent", bound="Entity")

@@ -13,7 +13,7 @@ from src.core.input_handlers import (
 )
 
 if TYPE_CHECKING:
-	from src.core.entity import Actor, Item
+	from src.entities.entity import Actor, Item
 
 
 class Consumable(BaseComponent["Item"]):

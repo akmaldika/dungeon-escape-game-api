@@ -1,5 +1,5 @@
 """Handle the loading and initialization of game sessions."""
-from __future__ import annotations
+
 
 import copy
 
@@ -11,11 +11,11 @@ import numpy as np
 
 from src.core import color
 from src.core.engine import Engine
-from src.core import entity_factories
-from src.core.game_map import GameWorld
+from src.entities import entity_factories
+from src.map.game_map import GameWorld
 from src.core import input_handlers
-from src.core.custom_map_loader import load_custom_map, load_custom_map_from_string
-from src.core.map_logger import get_map_logger
+from src.map.custom_map_loader import load_custom_map, load_custom_map_from_string
+from src.map.map_logger import get_map_logger
 
 
 # Load the background image with Pillow and ensure it's RGB (no alpha channel).

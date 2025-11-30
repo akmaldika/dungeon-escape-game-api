@@ -6,7 +6,7 @@ from src.core import color, exceptions
 
 if TYPE_CHECKING:
     from src.core.engine import Engine
-    from src.core.entity import Actor, Entity, Item
+    from src.entities.entity import Actor, Entity, Item
 
 
 class Action:

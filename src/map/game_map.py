@@ -6,12 +6,12 @@ import numpy as np  # type: ignore
 from tcod.console import Console
 from tcod import libtcodpy
 
-from src.core.entity import Actor, Item
-from src.core import tile_types
+from src.entities.entity import Actor, Item
+from src.map import tile_types
 
 if TYPE_CHECKING:
     from src.core.engine import Engine
-    from src.core.entity import Entity
+    from src.entities.entity import Entity
 
 
 class GameMap:
@@ -131,7 +131,7 @@ class GameWorld:
 
     def generate_floor(self) -> None:
         """Generate a new floor and update the engine's game map."""
-        from src.core.procgen import generate_dungeon
+        from src.map.procgen import generate_dungeon
 
         self.current_floor += 1
 

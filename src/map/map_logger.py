@@ -7,8 +7,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-	from src.core.game_map import GameMap
-	from src.core import tile_types
+	from src.map.game_map import GameMap
+	from src.map import tile_types
 
 
 class MapLogger:
@@ -29,8 +29,12 @@ class MapLogger:
 	def _load_metadata(self) -> dict:
 		"""Load metadata dari file JSON."""
 		if os.path.exists(self.metadata_file):
-			with open(self.metadata_file, 'r') as f:
-				return json.load(f)
+			try:
+				with open(self.metadata_file, 'r') as f:
+					return json.load(f)
+			except json.JSONDecodeError:
+				print(f"Warning: Failed to load metadata from {self.metadata_file}. Creating new.")
+				return {"maps": []}
 		return {"maps": []}
 	
 	def _save_metadata(self):
@@ -47,7 +51,7 @@ class MapLogger:
 			mode: Mode game ('procedural', 'string', 'custom')
 			floor: Floor level saat ini
 		"""
-		from src.core import tile_types
+		from src.map import tile_types
 		
 		timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 		filename = f"floor_{floor}_{timestamp}.txt"
@@ -92,7 +96,7 @@ class MapLogger:
 		T = Red Ghost (Troll)
 		h = Health Potion
 		"""
-		from src.core import tile_types
+		from src.map import tile_types
 		
 		lines = []
 		for y in range(game_map.height):

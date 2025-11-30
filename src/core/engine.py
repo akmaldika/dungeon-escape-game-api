@@ -9,8 +9,8 @@ from src.core import exceptions
 from src.core.message_log import MessageLog
 
 if TYPE_CHECKING:
-    from src.core.entity import Actor
-    from src.core.game_map import GameMap, GameWorld
+    from src.entities.entity import Actor
+    from src.map.game_map import GameMap, GameWorld
 
 
 class Engine:

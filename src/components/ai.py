@@ -8,7 +8,7 @@ import tcod
 from src.core.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction
 
 if TYPE_CHECKING:
-	from src.core.entity import Actor
+	from src.entities.entity import Actor
 
 
 class BaseAI(Action):

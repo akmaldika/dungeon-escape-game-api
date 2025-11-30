@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 
 from src.core import color
 from src.components.base_component import BaseComponent
-from src.core.render_order import RenderOrder
+from src.entities.render_order import RenderOrder
 
 if TYPE_CHECKING:
-	from src.core.entity import Actor
+	from src.entities.entity import Actor
 
 
 class Fighter(BaseComponent["Actor"]):

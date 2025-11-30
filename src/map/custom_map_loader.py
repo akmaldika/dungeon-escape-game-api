@@ -12,9 +12,9 @@ Character Mapping:
     h = Health Potion (item consumable)
 """
 import copy
-from src.core import tile_types
-from src.core import entity_factories
-from src.core.game_map import GameMap
+from src.map import tile_types
+from src.entities import entity_factories
+from src.map.game_map import GameMap
 
 
 def load_custom_map_from_string(map_string, engine):

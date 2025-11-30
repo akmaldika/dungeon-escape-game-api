@@ -5,10 +5,7 @@ import threading
 import queue
 
 import tcod  # type: ignore
-try:
-    from src.core import input_handlers  # prefer src version
-except Exception:
-    import input_handlers  # fallback during migration
+from src.core import input_handlers
 
 
 class ThreadSafeGameState:

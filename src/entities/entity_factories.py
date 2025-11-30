@@ -3,7 +3,7 @@ from src.components import consumable
 from src.components.fighter import Fighter
 from src.components.inventory import Inventory
 from src.components.level import Level
-from src.core.entity import Actor, Item
+from src.entities.entity import Actor, Item
 
 player = Actor(
 	char=0x100000,
