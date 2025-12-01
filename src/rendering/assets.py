@@ -31,9 +31,20 @@ class AssetLoader:
         
         # Initialize fonts
         if pygame.font.get_init():
-            self.font_small = pygame.font.Font(None, max(24, tile_size))
-            self.font_large = pygame.font.Font(None, max(32, tile_size + 8))
+            if tile_size <= 8:
+                base_font_size = 6  # Larger relative size for readability
+                title_font_size = 10
+            else:
+                base_font_size = 12
+                title_font_size = 20
+            
+            font_family = "assets/fonts/unscii-8.ttf"
+            self.font_small = pygame.font.Font(font_family, base_font_size)
+            self.font_large = pygame.font.Font(font_family, title_font_size)
             self.font = self.font_small
+            
+        # Disable antialiasing for small tile sizes (pixel art look)
+        self.antialias = self.tile_size >= 16
         
         self.load_assets()
 
@@ -93,7 +104,7 @@ class AssetLoader:
         surface.fill(bg_color)
         
         if self.font:
-            text_surface = self.font.render(char, True, color)
+            text_surface = self.font.render(char, self.antialias, color)
             # Center the text
             text_rect = text_surface.get_rect(center=(self.tile_size // 2, self.tile_size // 2))
             surface.blit(text_surface, text_rect)

@@ -15,7 +15,6 @@ BAR_HEIGHT_TILES = 1
 BAR_BOTTOM_OFFSET = 5
 MSG_X_OFFSET = 5
 MSG_BOTTOM_OFFSET = 6
-MSG_LINE_SPACING = 20
 MSG_COUNT = 5
 
 class UIRenderer:
@@ -28,6 +27,12 @@ class UIRenderer:
         self.pixel_width = width * tile_size
         self.pixel_height = height * tile_size
         self.assets = assets
+        
+        # Calculate dynamic spacing
+        if tile_size <= 8:
+            self.msg_line_spacing = 10 # Accommodate larger font
+        else:
+            self.msg_line_spacing = 20
 
     def render_ui(self, surface: pygame.Surface, engine: Engine) -> None:
         """Render UI elements like health bar and messages."""
@@ -48,12 +53,12 @@ class UIRenderer:
         # Health text
         if self.assets.font:
             health_text = f"HP: {engine.player.fighter.hp}/{engine.player.fighter.max_hp}"
-            text_surface = self.assets.font.render(health_text, True, color.bar_text)
+            text_surface = self.assets.font.render(health_text, self.assets.antialias, color.bar_text)
             surface.blit(text_surface, (bar_x + 5, bar_y + 2))
             
             # Dungeon level
             level_text = f"Dungeon level: {engine.game_world.current_floor}"
-            level_surface = self.assets.font.render(level_text, True, color.white)
+            level_surface = self.assets.font.render(level_text, self.assets.antialias, color.white)
             surface.blit(level_surface, (0, self.pixel_height - 3 * self.tile_size))
         
         # Messages
@@ -64,8 +69,8 @@ class UIRenderer:
             # Show last few messages
             recent_messages = engine.message_log.messages[-MSG_COUNT:]
             for i, message in enumerate(recent_messages):
-                msg_surface = self.assets.font.render(message.full_text[:80], True, message.fg)
-                surface.blit(msg_surface, (msg_x, msg_y + i * MSG_LINE_SPACING))
+                msg_surface = self.assets.font.render(message.full_text[:80], self.assets.antialias, message.fg)
+                surface.blit(msg_surface, (msg_x, msg_y + i * self.msg_line_spacing))
 
     def render_main_menu(self, surface: pygame.Surface) -> None:
         """Render the main menu."""
@@ -85,13 +90,13 @@ class UIRenderer:
 
         # Title
         title_text = "TOMBS OF ANCIENT AI AGENT"
-        title_surface = self.assets.font_large.render(title_text, True, (255, 255, 63))
+        title_surface = self.assets.font_large.render(title_text, self.assets.antialias, (255, 255, 63))
         title_rect = title_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 - 80))
         surface.blit(title_surface, title_rect)
         
         # Author
         author_text = "By Akmal Mahardika Nurwahyu Pratama"
-        author_surface = self.assets.font.render(author_text, True, (255, 255, 63))
+        author_surface = self.assets.font.render(author_text, self.assets.antialias, (255, 255, 63))
         author_rect = author_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height - 40))
         surface.blit(author_surface, author_rect)
         
@@ -106,7 +111,7 @@ class UIRenderer:
         start_y = self.pixel_height // 2 - 20
         
         for i, option in enumerate(menu_options):
-            option_surface = self.assets.font.render(option, True, (255, 255, 255))
+            option_surface = self.assets.font.render(option, self.assets.antialias, (255, 255, 255))
             option_rect = option_surface.get_rect(center=(center_x, start_y + i * 30))
             
             # Draw background box
@@ -124,17 +129,17 @@ class UIRenderer:
             return
 
         # Main title
-        title_surface = self.assets.font_large.render(title, True, title_color)
+        title_surface = self.assets.font_large.render(title, self.assets.antialias, title_color)
         title_rect = title_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 - 60))
         surface.blit(title_surface, title_rect)
         
         # Subtitle
-        subtitle_surface = self.assets.font.render(subtitle, True, (255, 255, 255))
+        subtitle_surface = self.assets.font.render(subtitle, self.assets.antialias, (255, 255, 255))
         subtitle_rect = subtitle_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 - 20))
         surface.blit(subtitle_surface, subtitle_rect)
         
         # Instructions
         instruction_text = "Press ESC or Q to return to main menu"
-        instruction_surface = self.assets.font.render(instruction_text, True, (200, 200, 200))
+        instruction_surface = self.assets.font.render(instruction_text, self.assets.antialias, (200, 200, 200))
         instruction_rect = instruction_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 + 20))
         surface.blit(instruction_surface, instruction_rect)

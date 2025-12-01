@@ -40,11 +40,20 @@ class PygameRenderer:
         self.pixel_width = width * tile_size
         self.pixel_height = height * tile_size
         
-        # Create the display surface
-        self.screen = pygame.display.set_mode((self.pixel_width, self.pixel_height))
-        pygame.display.set_caption("Dungeon Escape AI - Pygame Renderer")
+        # Calculate display scale
+        # If tile_size is small (e.g. 8), scale up the window to be viewable
+        self.display_scale = 1.0
+        if self.tile_size < 16:
+            self.display_scale = 2.0
+            
+        self.display_width = int(self.pixel_width * self.display_scale)
+        self.display_height = int(self.pixel_height * self.display_scale)
         
-        # Create a surface for off-screen rendering (for screenshots)
+        # Create the display surface (window)
+        self.screen = pygame.display.set_mode((self.display_width, self.display_height))
+        pygame.display.set_caption(f"Dungeon Escape AI - Pygame Renderer ({self.tile_size}x{self.tile_size})")
+        
+        # Create a surface for off-screen rendering (internal resolution)
         self.render_surface = pygame.Surface((self.pixel_width, self.pixel_height))
         
         # Initialize sub-systems
@@ -183,7 +192,11 @@ class PygameRenderer:
     def present(self):
         """Present the rendered surface to the screen."""
         if not self.headless:
-            self.screen.blit(self.render_surface, (0, 0))
+            if self.display_scale != 1.0:
+                # Scale the internal surface to the display window
+                pygame.transform.scale(self.render_surface, (self.display_width, self.display_height), self.screen)
+            else:
+                self.screen.blit(self.render_surface, (0, 0))
             pygame.display.flip()
     
     def get_screenshot_bytes(self) -> bytes:
