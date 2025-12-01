@@ -8,7 +8,7 @@ from src.core.actions import Action, BumpAction, MeleeAction, MovementAction, Wa
 from src.components.pathfinding import PathfindingService
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor
+    from src.entities import Actor
 
 
 class BaseAI(Action):

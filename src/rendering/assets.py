@@ -4,20 +4,8 @@ import os
 import pygame
 from typing import Dict, Tuple, Optional
 
-from src.core.config import get_sprite_directory
-
-# Fallback colors
-COLOR_PLAYER = (255, 255, 255)
-COLOR_GHOST = (63, 127, 63)
-COLOR_RED_GHOST = (0, 127, 0)
-COLOR_FLOOR_LIGHT = (200, 180, 50)
-COLOR_FLOOR_DARK = (50, 50, 150)
-COLOR_WALL_LIGHT = (130, 110, 50)
-COLOR_WALL_DARK = (0, 0, 100)
-COLOR_STAIRS = (255, 255, 0)
-COLOR_SHROUD = (0, 0, 0)
-COLOR_HEALTH_POTION = (127, 0, 255)
-COLOR_DEFAULT = (128, 128, 128)
+from src.core.config import get_sprite_directory, CURRENT_RENDERING_MODE, RenderingMode
+from src.core import color
 
 class AssetLoader:
     """Handles loading and management of game assets (sprites, fonts)."""
@@ -49,7 +37,14 @@ class AssetLoader:
         self.load_assets()
 
     def load_assets(self) -> None:
-        """Load all sprites and tile images from the appropriate directory."""
+        """Load assets based on the current rendering mode."""
+        if CURRENT_RENDERING_MODE == RenderingMode.SPRITE:
+            self._load_sprites()
+        else:
+            self._generate_char_assets()
+
+    def _load_sprites(self) -> None:
+        """Load sprites from files."""
         # Get sprite directory based on tile_size
         try:
             sprite_dir = get_sprite_directory(self.tile_size)
@@ -73,24 +68,49 @@ class AssetLoader:
                     self.sprites[name] = scaled_image
                 except Exception as e:
                     print(f"Failed to load sprite {name}: {e}")
-                    self.sprites[name] = self.create_colored_tile(COLOR_DEFAULT)
+                    self.sprites[name] = self.create_colored_tile(color.error)
             else:
                 self.sprites[name] = self.create_colored_tile(self._get_fallback_color(name))
+
+    def _generate_char_assets(self) -> None:
+        """Generate character-based assets."""
+        # Define character mappings
+        char_map = {
+            'player': ('@', color.player),
+            'ghost': ('G', color.ghost),
+            'red_ghost': ('R', color.red_ghost),
+            'floor': ('.', color.floor),
+            'dark_floor': ('.', color.floor), # Same char, handled by lighting in renderer usually
+            'wall': ('#', color.wall),
+            'dark_wall': ('#', color.wall),
+            'ladder': ('>', color.stairs),
+            'wooden_box': ('h', color.health_potion), # Using 'h' for potion/box for now
+        }
+
+        bg_color = (0, 0, 0) # Default black background for CHAR_CLASSIC
+        
+        for name, (char, fg_color) in char_map.items():
+            if CURRENT_RENDERING_MODE == RenderingMode.CHAR_COLOR_BG:
+                # Use a specific background color if needed, or just keep it black/transparent
+                # For now keeping black to ensure contrast, or we could use a very dark version of fg
+                pass
+                
+            self.sprites[name] = self.create_text_tile(char, fg_color, bg_color)
 
     def _get_fallback_color(self, name: str) -> Tuple[int, int, int]:
         """Get fallback color for a missing sprite."""
         colors = {
-            'player': COLOR_PLAYER,
-            'ghost': COLOR_GHOST,
-            'red_ghost': COLOR_RED_GHOST,
-            'floor': COLOR_FLOOR_LIGHT,
-            'dark_floor': COLOR_FLOOR_DARK,
-            'wall': COLOR_WALL_LIGHT,
-            'dark_wall': COLOR_WALL_DARK,
-            'ladder': COLOR_STAIRS,
-            'wooden_box': COLOR_HEALTH_POTION,
+            'player': color.player,
+            'ghost': color.ghost,
+            'red_ghost': color.red_ghost,
+            'floor': color.floor,
+            'dark_floor': color.floor,
+            'wall': color.wall,
+            'dark_wall': color.wall,
+            'ladder': color.stairs,
+            'wooden_box': color.health_potion,
         }
-        return colors.get(name, COLOR_DEFAULT)
+        return colors.get(name, color.error)
 
     def create_colored_tile(self, color: Tuple[int, int, int]) -> pygame.Surface:
         """Create a colored rectangle tile."""
@@ -113,4 +133,4 @@ class AssetLoader:
 
     def get_sprite(self, name: str) -> pygame.Surface:
         """Get a sprite by name, returning a default tile if not found."""
-        return self.sprites.get(name, self.create_colored_tile(COLOR_DEFAULT))
+        return self.sprites.get(name, self.create_colored_tile(color.error))

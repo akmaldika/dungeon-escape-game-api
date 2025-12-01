@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from src.core.engine import Engine
-    from src.entities.entity import Actor, Entity
+    from src.entities import Actor, Entity
 
 
 class Action:

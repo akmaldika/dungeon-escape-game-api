@@ -7,7 +7,7 @@ from src.core.actions.base import Action, ActionWithDirection
 from src.core.actions.combat import MeleeAction
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor
+    from src.entities import Actor
 
 
 class MovementAction(ActionWithDirection):

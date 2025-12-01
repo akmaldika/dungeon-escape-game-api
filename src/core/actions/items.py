@@ -6,7 +6,7 @@ from src.core import exceptions
 from src.core.actions.base import Action
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor, Item
+    from src.entities import Actor, Item
 
 
 class PickupAction(Action):

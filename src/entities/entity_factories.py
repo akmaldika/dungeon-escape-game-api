@@ -3,11 +3,13 @@ from src.components import consumable
 from src.components.fighter import Fighter
 from src.components.inventory import Inventory
 from src.components.level import Level
-from src.entities.entity import Actor, Item
+from src.entities import Actor, Item
+
+from src.core import color
 
 player = Actor(
-	char=0x100000,
-	color=(71, 108, 108),
+	char=ord("@"),
+	color=color.player,
 	name="Player",
 	ai_cls=HostileEnemy,
 	fighter=Fighter(hp=100, base_power=4),
@@ -17,7 +19,7 @@ player = Actor(
 
 ghost = Actor(
 	char=ord("G"),
-	color=(71, 108, 108),
+	color=color.ghost,
 	name="Ghost",
 	ai_cls=HostileEnemy,
 	fighter=Fighter(hp=10, base_power=2),
@@ -27,7 +29,7 @@ ghost = Actor(
 
 red_ghost = Actor(
 	char=ord("R"),
-	color=(71, 108, 108),
+	color=color.red_ghost,
 	name="Red Ghost",
 	ai_cls=HostileEnemy,
 	fighter=Fighter(hp=15, base_power=8),
@@ -36,8 +38,8 @@ red_ghost = Actor(
 )
 
 health_potion = Item(
-	char=0x100008,
-	color=(127, 0, 255),
+	char=ord("h"),
+	color=color.health_potion,
 	name="Health Potion",
 	consumable=consumable.HealingConsumable(amount=5),
 )

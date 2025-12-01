@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from src.components.base_component import BaseComponent
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor
+    from src.entities import Actor
 
 
 class Level(BaseComponent["Actor"]):

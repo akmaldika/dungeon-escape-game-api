@@ -10,7 +10,7 @@ from src.components.base_component import BaseComponent
 from src.core.exceptions import Impossible
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor, Item
+    from src.entities import Actor, Item
     from src.core.input_handlers import ActionOrHandler
 
 

@@ -6,7 +6,7 @@ import numpy as np  # type: ignore
 import tcod
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor
+    from src.entities import Actor
 
 class PathfindingService:
     """Service for calculating paths for entities."""

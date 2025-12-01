@@ -41,25 +41,23 @@ floor = new_tile(
 	walkable=True,
 	transparent=True,
 	# Use the dark floor graphic (0x100004) when not in FOV
-	dark=(0x100004, (255, 255, 255), (0, 0, 0)), 
+	dark=(ord("."), (100, 100, 100), (0, 0, 0)), 
 	# Use the light floor graphic (0x100003) when in FOV
-	light=(0x100003, (255, 255, 255), (0, 0, 0)),
+	light=(ord("."), (200, 200, 200), (0, 0, 0)),
 )
 wall = new_tile(
 	walkable=False,
 	transparent=False,
 	# Use the dark wall graphic (0x100006) when not in FOV
-	dark=(0x100006, (255, 255, 255), (0, 0, 0)),
+	dark=(ord("#"), (100, 100, 100), (0, 0, 0)),
 	# Use the light wall graphic (0x100005) when in FOV
-	light=(0x100005, (255, 255, 255), (0, 0, 0)),
+	light=(ord("#"), (200, 200, 200), (0, 0, 0)),
 )
 down_stairs = new_tile(
 	walkable=True,
 	transparent=True,
-	dark=(0x100007, (0, 0, 100), (50, 50, 150)),
-	# dark=(ord(">"), (0, 0, 100), (50, 50, 150)),
-	light=(0x100007, (255, 255, 255), (200, 180, 50)),
-	# light=(ord(">"), (255, 255, 255), (200, 180, 50)),
+	dark=(ord(">"), (0, 0, 100), (50, 50, 150)),
+	light=(ord(">"), (255, 255, 255), (200, 180, 50)),
 )
 
 # VOID represents empty space (black areas)

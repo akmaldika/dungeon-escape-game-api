@@ -7,7 +7,7 @@ from src.components.base_component import BaseComponent
 from src.entities.render_order import RenderOrder
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor
+    from src.entities import Actor
 
 
 class Fighter(BaseComponent["Actor"]):

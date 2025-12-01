@@ -1,31 +1,44 @@
-white = (0xFF, 0xFF, 0xFF)  # White
-black = (0x0, 0x0, 0x0)      # Black
-red = (0xFF, 0x0, 0x0)       # Red
+# Standard Colors
+white = (0xFF, 0xFF, 0xFF)
+black = (0x00, 0x00, 0x00)
+red = (0xFF, 0x00, 0x00)
+green = (0x00, 0xFF, 0x00)
+blue = (0x00, 0x00, 0xFF)
+yellow = (0xFF, 0xFF, 0x00)
+cyan = (0x00, 0xFF, 0xFF)
+magenta = (0xFF, 0x00, 0xFF)
 
-player_atk = (0xE0, 0xE0, 0xE0)           # Light gray
-enemy_atk = (0xFF, 0xC0, 0xC0)            # Light red
-needs_target = (0x3F, 0xFF, 0xFF)         # Cyan
-status_effect_applied = (0x3F, 0xFF, 0x3F) # Light green
-descend = (0x9F, 0x3F, 0xFF)              # Purple
+# Entity Colors (High Contrast)
+player = (255, 255, 0)       # Yellow
+ghost = (0, 255, 0)          # Green
+red_ghost = (255, 0, 0)      # Red
+health_potion = (128, 0, 255) # Purple
 
-player_die = (0xFF, 0x30, 0x30)  # Bright red
-enemy_die = (0xFF, 0xA0, 0x30)   # Orange
+# Map Colors
+floor = (100, 100, 100)      # Grey
+wall = (200, 200, 200)       # Light Grey
+stairs = (255, 255, 255)     # White
+shroud = (0, 0, 0)           # Black
 
-invalid = (0xFF, 0xFF, 0x00)    # Yellow
-impossible = (0x80, 0x80, 0x80) # Gray
-error = (0xFF, 0x40, 0x40)       # Red-orange
-
-
-welcome_text = (0x20, 0xA0, 0xFF)  # Light blue
-health_recovered = (0x0, 0xFF, 0x0)  # Green
-
+# UI Colors
 bar_text = white
-bar_filled = (0x0, 0x60, 0x0)  # Dark green
-bar_empty = (0x40, 0x10, 0x10)  # Dark maroon
-
-menu_title = (255, 255, 63)  # Pale yellow
+bar_filled = (0, 128, 0)     # Dark Green
+bar_empty = (64, 0, 0)       # Dark Red
+menu_title = (255, 255, 0)   # Yellow
 menu_text = white
 
-# XP Bar colors
-xp_bar_filled = (0, 100, 255)  # Blue
-xp_bar_empty = (64, 64, 64)    # Dark gray
+# Status Colors
+invalid = (255, 255, 0)      # Yellow
+impossible = (128, 128, 128) # Grey
+error = (255, 0, 0)          # Red
+welcome_text = (0, 255, 255) # Cyan
+health_recovered = (0, 255, 0) # Green
+
+# Combat Colors
+player_atk = (200, 200, 200) # Light Grey
+enemy_atk = (255, 128, 128)  # Light Red
+needs_target = (0, 255, 255) # Cyan
+status_effect_applied = (0, 255, 0) # Green
+descend = (255, 0, 255)      # Magenta
+player_die = (255, 0, 0)     # Red
+enemy_die = (255, 128, 0)    # Orange

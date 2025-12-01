@@ -6,7 +6,7 @@ from src.core import color, exceptions
 from src.core.actions.base import ActionWithDirection
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor
+    from src.entities import Actor
 
 
 class MeleeAction(ActionWithDirection):

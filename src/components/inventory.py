@@ -5,7 +5,7 @@ from typing import List, TYPE_CHECKING
 from src.components.base_component import BaseComponent
 
 if TYPE_CHECKING:
-    from src.entities.entity import Actor, Item
+    from src.entities import Actor, Item
 
 
 class Inventory(BaseComponent["Actor"]):

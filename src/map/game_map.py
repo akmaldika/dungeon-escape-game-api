@@ -6,7 +6,7 @@ import numpy as np  # type: ignore
 from tcod.console import Console
 from tcod import libtcodpy
 
-from src.entities.entity import Actor, Item
+from src.entities import Actor, Item
 from src.map import tile_types
 
 if TYPE_CHECKING:
