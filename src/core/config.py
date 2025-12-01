@@ -10,7 +10,7 @@ from typing import Literal
 
 
 # Default sprite pixel size (can be 8 or 16)
-DEFAULT_SPRITE_SIZE: Literal[8, 16] = 16
+DEFAULT_SPRITE_SIZE: Literal[8, 16] = 8
 
 # Supported sprite sizes
 SUPPORTED_SPRITE_SIZES = [8, 16]

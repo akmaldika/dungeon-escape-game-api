@@ -54,6 +54,6 @@ class GameActionService:
                 if current_step != prev_step or current_level != prev_level:
                     return new_state
                     
-            time.sleep(0.01)
+            time.sleep(0.001)
             
         return new_state or prev_state

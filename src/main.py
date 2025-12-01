@@ -26,7 +26,7 @@ from src.rendering.pygame_renderer import PygameRenderer, PygameEventConverter
 from src.api.state import ThreadSafeGameState
 from src.api.app import create_app
 from src.api.config import get_server_settings
-from src.api.sprite_config import (
+from src.core.config import (
     DEFAULT_SPRITE_SIZE,
     SUPPORTED_SPRITE_SIZES,
     validate_sprite_directory,
