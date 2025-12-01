@@ -10,12 +10,23 @@ if TYPE_CHECKING:
     from src.core.engine import Engine
 
 # UI Constants
+# UI Constants
 BAR_WIDTH_RATIO = 0.25  # 1/4 of screen width
 BAR_HEIGHT_TILES = 1
 BAR_BOTTOM_OFFSET = 5
 MSG_X_OFFSET = 5
 MSG_BOTTOM_OFFSET = 6
 MSG_COUNT = 5
+
+# Layout Coordinates (Tiles)
+LAYOUT_HP_BAR_Y = 41
+LAYOUT_HP_BAR_X = 0
+LAYOUT_HP_BAR_WIDTH = 20
+LAYOUT_LEVEL_Y = 43
+LAYOUT_LEVEL_X = 0
+LAYOUT_MSG_START_Y = 40
+LAYOUT_MSG_X = 22
+LAYOUT_MSG_HEIGHT = 5
 
 class UIRenderer:
     """Handles rendering of UI elements (menus, HUD, messages)."""
@@ -32,15 +43,16 @@ class UIRenderer:
         if tile_size <= 8:
             self.msg_line_spacing = 10 # Accommodate larger font
         else:
-            self.msg_line_spacing = 20
+            self.msg_line_spacing = 40
 
     def render_ui(self, surface: pygame.Surface, engine: Engine) -> None:
         """Render UI elements like health bar and messages."""
-        # Health bar
-        bar_width = int(self.width * BAR_WIDTH_RATIO * self.tile_size)
-        bar_height = self.tile_size * BAR_HEIGHT_TILES
-        bar_x = 0
-        bar_y = self.pixel_height - BAR_BOTTOM_OFFSET * self.tile_size
+        
+        # 1. Health Bar
+        bar_y = LAYOUT_HP_BAR_Y * self.tile_size
+        bar_x = LAYOUT_HP_BAR_X * self.tile_size
+        bar_width = LAYOUT_HP_BAR_WIDTH * self.tile_size
+        bar_height = self.tile_size # 1 tile high
         
         # Background
         pygame.draw.rect(surface, color.bar_empty, (bar_x, bar_y, bar_width, bar_height))
@@ -50,27 +62,32 @@ class UIRenderer:
             fill_width = int(bar_width * engine.player.fighter.hp / engine.player.fighter.max_hp)
             pygame.draw.rect(surface, color.bar_filled, (bar_x, bar_y, fill_width, bar_height))
         
-        # Health text
+        # Health text (Centered on bar)
         if self.assets.font:
             health_text = f"HP: {engine.player.fighter.hp}/{engine.player.fighter.max_hp}"
             text_surface = self.assets.font.render(health_text, self.assets.antialias, color.bar_text)
-            surface.blit(text_surface, (bar_x + 5, bar_y + 2))
+            text_rect = text_surface.get_rect(center=(bar_x + bar_width // 2, bar_y + bar_height // 2))
+            surface.blit(text_surface, text_rect)
             
-            # Dungeon level
+        # 2. Dungeon Level
+        if self.assets.font:
             level_text = f"Dungeon level: {engine.game_world.current_floor}"
             level_surface = self.assets.font.render(level_text, self.assets.antialias, color.white)
-            surface.blit(level_surface, (0, self.pixel_height - 3 * self.tile_size))
+            # Align left
+            surface.blit(level_surface, (LAYOUT_LEVEL_X * self.tile_size, LAYOUT_LEVEL_Y * self.tile_size))
         
-        # Messages
+        # 3. Messages
         if hasattr(engine, 'message_log') and engine.message_log.messages and self.assets.font:
-            msg_x = int(self.width * BAR_WIDTH_RATIO * self.tile_size) + MSG_X_OFFSET
-            msg_y = self.pixel_height - MSG_BOTTOM_OFFSET * self.tile_size
+            msg_x = LAYOUT_MSG_X * self.tile_size
+            msg_start_y = LAYOUT_MSG_START_Y * self.tile_size
             
-            # Show last few messages
-            recent_messages = engine.message_log.messages[-MSG_COUNT:]
+            # Show last N messages
+            recent_messages = engine.message_log.messages[-LAYOUT_MSG_HEIGHT:]
+            
             for i, message in enumerate(recent_messages):
+                msg_y = msg_start_y + i * self.tile_size # 1 message per tile height
                 msg_surface = self.assets.font.render(message.full_text[:80], self.assets.antialias, message.fg)
-                surface.blit(msg_surface, (msg_x, msg_y + i * self.msg_line_spacing))
+                surface.blit(msg_surface, (msg_x, msg_y))
 
     def render_main_menu(self, surface: pygame.Surface) -> None:
         """Render the main menu."""
@@ -91,13 +108,22 @@ class UIRenderer:
         # Title
         title_text = "TOMBS OF ANCIENT AI AGENT"
         title_surface = self.assets.font_large.render(title_text, self.assets.antialias, (255, 255, 63))
-        title_rect = title_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 - 80))
+        
+        if self.tile_size == 16:
+            title_rect = title_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 - 180))
+        else:
+            title_rect = title_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height // 2 - 80))
+        # print(title_rect.size)
         surface.blit(title_surface, title_rect)
         
         # Author
         author_text = "By Akmal Mahardika Nurwahyu Pratama"
         author_surface = self.assets.font.render(author_text, self.assets.antialias, (255, 255, 63))
-        author_rect = author_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height - 40))
+        
+        if self.tile_size == 16:
+            author_rect = author_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height - 40))
+        else:
+            author_rect = author_surface.get_rect(center=(self.pixel_width // 2, self.pixel_height - 40))
         surface.blit(author_surface, author_rect)
         
         # Menu options
@@ -112,7 +138,10 @@ class UIRenderer:
         
         for i, option in enumerate(menu_options):
             option_surface = self.assets.font.render(option, self.assets.antialias, (255, 255, 255))
-            option_rect = option_surface.get_rect(center=(center_x, start_y + i * 30))
+            margin = 30 
+            if self.tile_size == 16:
+                margin *= 2 
+            option_rect = option_surface.get_rect(center=(center_x, start_y + i * margin))
             
             # Draw background box
             bg_rect = option_rect.inflate(20, 10)

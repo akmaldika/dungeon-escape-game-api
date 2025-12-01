@@ -106,6 +106,6 @@ class Fighter(BaseComponent["Actor"]):
             hp_increase = self.max_hp - old_max_hp
             self.hp += hp_increase
             self.engine.message_log.add_message(
-                f"adapts to the dungeon's depth! Max health increased by {hp_increase}!",
+                f"You've moved up to the next level! Maximum health increases by {hp_increase}!",
                 color.health_recovered
             )

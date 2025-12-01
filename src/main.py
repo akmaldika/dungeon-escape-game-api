@@ -51,13 +51,13 @@ class GameApplication:
         self.port = port
         self.headless = headless
         
-        self.screen_width = 60
-        self.screen_height = 40
+        self.screen_width = 80
+        self.screen_height = 45
         
         # Initialize Game State
         self.game_state = ThreadSafeGameState()
         self.api_handler = APIActionHandler(self.game_state)
-        
+
         # Initialize Renderer
         self.renderer = PygameRenderer(
             self.screen_width, 

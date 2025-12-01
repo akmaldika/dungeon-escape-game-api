@@ -24,7 +24,7 @@ background_image = np.asarray(bg_img, dtype=np.uint8)
 
 
 def new_game(use_custom_map=False, custom_map_file="", custom_map_string="", 
-             max_rooms=30, room_min_size=4, room_max_size=6, map_width=30, map_height=30,
+             max_rooms=30, room_min_size=4, room_max_size=6, map_width=80, map_height=40,
              fov_mode="partial", fov_radius=8) -> Engine:
 	"""Return a brand new game session as an Engine instance."""
 

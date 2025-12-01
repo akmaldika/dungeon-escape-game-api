@@ -50,13 +50,28 @@ class GameFactory:
                 fov_mode=fov_mode, fov_radius=fov_radius
             ))
         elif mode_string.startswith("procedural|"):
-            # Parse procedural parameters: "procedural|30,4,6,30,30,partial,8"
+            # Parse procedural parameters: "procedural|max_rooms,min_size,max_size,width,height,fov_mode,fov_radius"
+            # Example: "procedural|30,4,6,30,20,partial,8" -> Generates a 30x20 map
             param_string = mode_string[11:]  # Remove "procedural|"
             try:
                 parts = param_string.split(",")
-                max_rooms, room_min_size, room_max_size, map_width, map_height = map(int, parts[:5])
-                fov_mode = parts[5] if len(parts) > 5 else "partial"
-                fov_radius = int(parts[6]) if len(parts) > 6 else 8
+                # Defaults
+                max_rooms = 30
+                room_min_size = 4
+                room_max_size = 6
+                map_width = 80 # Default to full map size
+                map_height = 40 # Default to full map size
+                fov_mode = "partial"
+                fov_radius = 8
+                
+                if len(parts) >= 1: max_rooms = int(parts[0])
+                if len(parts) >= 2: room_min_size = int(parts[1])
+                if len(parts) >= 3: room_max_size = int(parts[2])
+                if len(parts) >= 4: map_width = int(parts[3])
+                if len(parts) >= 5: map_height = int(parts[4])
+                if len(parts) >= 6: fov_mode = parts[5]
+                if len(parts) >= 7: fov_radius = int(parts[6])
+
                 engine = cast(CoreEngine, setup_game.new_game(
                     use_custom_map=False,
                     max_rooms=max_rooms,

@@ -31,7 +31,7 @@ SPRITE_DIRECTORIES = {
 }
 
 # Global Rendering Configuration
-CURRENT_RENDERING_MODE = RenderingMode.CHAR_COLOR_BG
+CURRENT_RENDERING_MODE = RenderingMode.SPRITE
 USE_RANDOMIZED_SPRITES = False
 
 

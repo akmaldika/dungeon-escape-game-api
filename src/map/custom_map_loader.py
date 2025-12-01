@@ -32,6 +32,10 @@ def load_custom_map_from_string(map_string, engine):
     
 	height = len(lines)
 	width = max(len(line) for line in lines)
+	
+	if width > 80 or height > 40:
+		print(f"\033[93mWarning: Custom map size ({width}x{height}) exceeds maximum recommended size (80x40). Rendering issues may occur.\033[0m")
+
 	game_map = GameMap(engine, width, height, entities=[])
 
 	# Initialize all tiles as void (black space)

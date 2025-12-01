@@ -20,13 +20,13 @@ class AssetLoader:
         # Initialize fonts
         if pygame.font.get_init():
             if tile_size <= 8:
-                base_font_size = 6  # Larger relative size for readability
-                title_font_size = 10
-            else:
-                base_font_size = 12
+                base_font_size = 8  # Larger relative size for readability
                 title_font_size = 20
+            else:
+                base_font_size = 16
+                title_font_size = 40
             
-            font_family = "assets/fonts/unscii-8.ttf"
+            font_family = "assets/fonts/PixelOperator8.ttf"
             self.font_small = pygame.font.Font(font_family, base_font_size)
             self.font_large = pygame.font.Font(font_family, title_font_size)
             self.font = self.font_small
