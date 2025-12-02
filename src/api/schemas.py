@@ -36,7 +36,7 @@ class GameStateResponse(BaseModel):
 
 class PerformActionResponse(BaseModel):
     action_executed: str
-    state_changes: "GameStateResponse"
+    state_changes: GameStateResponse
 
 
 
