@@ -4,7 +4,7 @@ import os
 import pygame
 from typing import Dict, Tuple, Optional
 
-from src.core.config import get_sprite_directory, CURRENT_RENDERING_MODE, RenderingMode
+from src.core.config import get_sprite_directory
 from src.core import color
 
 class AssetLoader:
@@ -38,10 +38,7 @@ class AssetLoader:
 
     def load_assets(self) -> None:
         """Load assets based on the current rendering mode."""
-        if CURRENT_RENDERING_MODE == RenderingMode.SPRITE:
-            self._load_sprites()
-        else:
-            self._generate_char_assets()
+        self._load_sprites()
 
     def _load_sprites(self) -> None:
         """Load sprites from files."""
@@ -71,31 +68,6 @@ class AssetLoader:
                     self.sprites[name] = self.create_colored_tile(color.error)
             else:
                 self.sprites[name] = self.create_colored_tile(self._get_fallback_color(name))
-
-    def _generate_char_assets(self) -> None:
-        """Generate character-based assets."""
-        # Define character mappings
-        char_map = {
-            'player': ('@', color.player),
-            'ghost': ('G', color.ghost),
-            'red_ghost': ('R', color.red_ghost),
-            'floor': ('.', color.floor),
-            'dark_floor': ('.', color.floor), # Same char, handled by lighting in renderer usually
-            'wall': ('#', color.wall),
-            'dark_wall': ('#', color.wall),
-            'ladder': ('>', color.stairs),
-            'wooden_box': ('h', color.health_potion), # Using 'h' for potion/box for now
-        }
-
-        bg_color = (0, 0, 0) # Default black background for CHAR_CLASSIC
-        
-        for name, (char, fg_color) in char_map.items():
-            if CURRENT_RENDERING_MODE == RenderingMode.CHAR_COLOR_BG:
-                # Use a specific background color if needed, or just keep it black/transparent
-                # For now keeping black to ensure contrast, or we could use a very dark version of fg
-                pass
-                
-            self.sprites[name] = self.create_text_tile(char, fg_color, bg_color)
 
     def _get_fallback_color(self, name: str) -> Tuple[int, int, int]:
         """Get fallback color for a missing sprite."""

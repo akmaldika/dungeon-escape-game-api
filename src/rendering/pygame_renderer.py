@@ -47,8 +47,8 @@ class PygameRenderer:
         # Calculate display scale
         # If tile_size is small (e.g. 8), scale up the window to be viewable
         self.display_scale = 1.0
-        # if self.tile_size < 16:
-        #     self.display_scale = 2.0
+        if self.tile_size < 16:
+            self.display_scale = 2.0
             
         self.display_width = int(self.pixel_width * self.display_scale)
         self.display_height = int(self.pixel_height * self.display_scale)
