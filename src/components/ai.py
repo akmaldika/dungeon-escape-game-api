@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Tuple, TYPE_CHECKING, Optional
 
-import tcod
 
 from src.core.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction
 from src.components.pathfinding import PathfindingService

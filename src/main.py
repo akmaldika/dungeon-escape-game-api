@@ -19,8 +19,9 @@ _PROJECT_ROOT = os.path.dirname(_THIS_DIR)
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from src.app import setup_game
-from src.app.api_handler import APIActionHandler
+from src.core import setup
+from src.core.handlers import menus
+from src.api.services.action_handler import APIActionHandler
 from src.core import input_handlers
 from src.rendering.pygame_renderer import PygameRenderer, PygameEventConverter
 from src.api.state import ThreadSafeGameState
@@ -67,7 +68,7 @@ class GameApplication:
         )
         
         # Initialize Input Handler (Main Menu)
-        self.handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
+        self.handler: input_handlers.BaseEventHandler = menus.MainMenu()
         
         # Update Game State
         self.game_state.set_game_components(None, self.handler, self.renderer)
@@ -151,7 +152,7 @@ class GameApplication:
                 self.renderer.render_game_over_screen()
             elif isinstance(self.handler, input_handlers.EventHandler) and self.handler.engine:
                 self.renderer.render_complete(self.handler.engine)
-            elif isinstance(self.handler, setup_game.MainMenu):
+            elif isinstance(self.handler, menus.MainMenu):
                 self.renderer.render_main_menu()
             elif hasattr(self.handler, 'on_render'):
                 self.renderer.clear()

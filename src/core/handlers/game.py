@@ -89,9 +89,9 @@ class MainGameEventHandler(EventHandler):
             action = WaitAction(player)
         elif key == tcod.event.KeySym.ESCAPE:
             try:
-                from src.app.setup_game import MainMenu
+                from src.core.handlers.menus import MainMenu
             except Exception:
-                from src.app.setup_game import MainMenu
+                from src.core.handlers.menus import MainMenu
             return cast(BaseEventHandler, MainMenu())
         elif key == tcod.event.KeySym.G:
             action = PickupAction(player)

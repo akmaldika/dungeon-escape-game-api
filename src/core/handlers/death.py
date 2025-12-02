@@ -52,10 +52,10 @@ class GameOverEventHandler(BaseEventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> BaseEventHandler | None:
         if event.sym in (tcod.event.KeySym.ESCAPE, tcod.event.KeySym.Q):
             try:
-                from src.app.setup_game import MainMenu
+                from src.core.handlers.menus import MainMenu
             except Exception:
                 # Fallback if import fails
-                from src.app.setup_game import MainMenu
+                from src.core.handlers.menus import MainMenu
             return cast(BaseEventHandler, MainMenu())
         return None
 
@@ -89,8 +89,8 @@ class GameDoneEventHandler(BaseEventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> BaseEventHandler | None:
         if event.sym in (tcod.event.KeySym.ESCAPE, tcod.event.KeySym.Q):
             try:
-                from src.app.setup_game import MainMenu
+                from src.core.handlers.menus import MainMenu
             except Exception:
-                from src.app.setup_game import MainMenu
+                from src.core.handlers.menus import MainMenu
             return cast(BaseEventHandler, MainMenu())
         return None

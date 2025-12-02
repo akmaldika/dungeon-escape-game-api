@@ -4,7 +4,6 @@ from typing import Optional, Dict, List, Any, Tuple
 import threading
 import queue
 
-import tcod  # type: ignore
 from src.core import input_handlers
 from src.api.services.snapshot_builder import SnapshotBuilder
 

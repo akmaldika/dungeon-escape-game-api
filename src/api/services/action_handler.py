@@ -7,18 +7,15 @@ This module processes actions queued by the API and applies them to the game sta
 from __future__ import annotations
 
 import queue
-from typing import cast
+from typing import cast, TYPE_CHECKING
 
 import tcod
 
-
 from src.core import input_handlers
-from src.core.engine import Engine as CoreEngine
 from src.api.state import ThreadSafeGameState
 
-
-from src.app.game_factory import GameFactory
-
+if TYPE_CHECKING:
+    from src.core.engine import Engine
 
 class APIActionHandler:
     """Handles processing of API actions."""
@@ -65,10 +62,13 @@ class APIActionHandler:
 
     def _handle_restart(self, action_key: str) -> input_handlers.BaseEventHandler:
         """Handle game restart commands."""
+        # Import here to avoid circular imports
+        from src.core.setup import create_game_from_mode
+        
         parts = action_key.split("_", 1)
         mode_string = parts[1]
         
-        engine = GameFactory.create_game_from_mode(mode_string)
+        engine = create_game_from_mode(mode_string)
             
         new_handler = input_handlers.MainGameEventHandler(engine)
         self.game_state.set_game_components(engine, new_handler, self.game_state.renderer)
