@@ -4,7 +4,61 @@ This document outlines the JSON request and response formats for the Game API.
 
 ## Endpoints
 
-### 1. Start Game (`POST /start-game`)
+### 1. Root / Meta (`GET /`)
+
+Returns metadata about the running game server.
+
+**Response JSON:**
+
+```json
+{
+  "message": "Roguelike Game API - Pygame Renderer",
+  "status": "running" | "waiting_for_game",
+  "renderer": "pygame",
+  "tile_size": 16
+}
+```
+
+**Key Descriptions:**
+*   `message`: Server identification string.
+*   `status`: Current server state. `"running"` if a game is active, `"waiting_for_game"` otherwise.
+*   `renderer`: The rendering backend in use (e.g., `"pygame"`).
+*   `tile_size`: The current tile size in pixels (e.g., 8 or 16).
+
+---
+
+### 2. Get Game State (`GET /game-state`)
+
+Retrieves the current snapshot of the game state without performing any action.
+
+**Response JSON (`GameStateResponse`):**
+
+```json
+{
+  "dungeon_level": 1,
+  "current_level_step_count": 5,
+  "message_log": [
+    "You move east.",
+    "The ghost attacks you!"
+  ],
+  "player_standing_on": "floor",
+  "player_health": 25,
+  "health_potion_count": 1,
+  "player_position": [12, 15],
+  "stairs": [25, 30] | null,
+  "is_done": false,
+  "end_reason": null,
+  "legal_actions": ["w", "a", "s", "d", "space", "g", "i", ".", "esc", "q"]
+}
+```
+
+**Key Descriptions:**
+*   (Same as `Start Game` response)
+*   Returns 400 Bad Request if no game is active.
+
+---
+
+### 3. Start Game (`POST /start-game`)
 
 Initializes a new game session.
 
@@ -17,8 +71,8 @@ Initializes a new game session.
   "max_rooms": 30,
   "room_min_size": 4,
   "room_max_size": 6,
-  "map_width": 80,
-  "map_height": 40,
+  "map_width": 30,
+  "map_height": 30,
   "fov_mode": "partial" | "all",
   "fov_radius": 8
 }
@@ -30,8 +84,8 @@ Initializes a new game session.
 *   `max_rooms`: Maximum number of rooms to generate (procedural only).
 *   `room_min_size`: Minimum size of a room (procedural only).
 *   `room_max_size`: Maximum size of a room (procedural only).
-*   `map_width`: Width of the generated map in tiles (procedural only).
-*   `map_height`: Height of the generated map in tiles (procedural only).
+*   `map_width`: Width of the generated map in tiles (procedural only). Default 30.
+*   `map_height`: Height of the generated map in tiles (procedural only). Default 30.
 *   `fov_mode`: Field of View type (`"partial"` for limited visibility, `"all"` for full map).
 *   `fov_radius`: Radius of vision in tiles (used with `fov_mode="partial"`).
 
@@ -84,7 +138,7 @@ Initializes a new game session.
 
 ---
 
-### 2. Perform Action (`POST /perform-action`)
+### 4. Perform Action (`POST /perform-action`)
 
 Executes a player action in the game.
 
@@ -147,5 +201,33 @@ Executes a player action in the game.
 ```json
 {
   "detail": "No active game session"
+}
+```
+
+---
+
+### 5. Get Game Screenshot (`GET /game-screenshot`)
+
+Retrieves a PNG screenshot of the current game view.
+
+**Response:**
+*   **Content-Type**: `image/png`
+*   **Body**: Binary PNG data.
+
+**Response Headers:**
+*   `X-Tile-Size`: Size of a single tile in pixels (e.g., "16").
+*   `X-Total-Width-Tiles`: Total width of the game window in tiles (e.g., "80").
+*   `X-Total-Height-Tiles`: Total height of the game window in tiles (e.g., "45").
+*   `X-Map-Width-Tiles`: Width of the actual game map in tiles.
+*   `X-Map-Height-Tiles`: Height of the actual game map in tiles.
+*   `X-Total-Width-Pixels`: Total width of the image in pixels.
+*   `X-Total-Height-Pixels`: Total height of the image in pixels.
+*   `X-Map-Width-Pixels`: Width of the map area in pixels.
+*   `X-Map-Height-Pixels`: Height of the map area in pixels.
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "detail": "No active game or failed to capture screenshot"
 }
 ```
