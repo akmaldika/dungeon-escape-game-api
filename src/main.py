@@ -206,7 +206,7 @@ def _resolve_tile_size_value(size: int) -> int:
     return size
 
 
-def parse_arguments(args: list[str]) -> tuple[int, int, bool]:
+def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
     parser = argparse.ArgumentParser(
         description="Configure the roguelike renderer and API server",
         add_help=True,
@@ -227,6 +227,13 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool]:
         "--headless",
         action="store_true",
         help="Run in headless mode (no window) for AI benchmarking",
+    )
+
+    parser.add_argument(
+        "-m", "--render-mode",
+        choices=["sprite", "char", "char_color"],
+        default="sprite",
+        help="Rendering mode: sprite (default), char (ASCII), char_color (Colored ASCII)",
     )
 
     known_args, legacy_args = parser.parse_known_args(args)
@@ -252,7 +259,7 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool]:
     
     headless = known_args.headless or "--headless" in legacy_args or "-h" in legacy_args
 
-    return tile_size, port, headless
+    return tile_size, port, headless, known_args.render_mode
 
 
 def handle_sigint(signum, frame):
@@ -268,7 +275,20 @@ def main() -> None:
     signal.signal(signal.SIGINT, handle_sigint)
     signal.signal(signal.SIGTERM, handle_sigint)
     
-    tile_size, port, headless = parse_arguments(sys.argv[1:])
+    tile_size, port, headless, render_mode = parse_arguments(sys.argv[1:])
+    
+    # Set global rendering mode
+    import src.core.config
+    from src.core.config import RenderingMode
+    
+    if render_mode == "char":
+        src.core.config.CURRENT_RENDERING_MODE = RenderingMode.CHAR
+    elif render_mode == "char_color":
+        src.core.config.CURRENT_RENDERING_MODE = RenderingMode.CHAR_COLOR
+    else:
+        src.core.config.CURRENT_RENDERING_MODE = RenderingMode.SPRITE
+        
+    print(f"Rendering Mode: {src.core.config.CURRENT_RENDERING_MODE.name}")
     
     app = GameApplication(tile_size, port, headless)
     app.start()

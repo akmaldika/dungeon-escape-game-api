@@ -9,6 +9,13 @@ import os
 from typing import Literal
 
 
+from enum import Enum, auto
+
+class RenderingMode(Enum):
+    SPRITE = auto()
+    CHAR = auto()      # Classic ASCII (White on Black)
+    CHAR_COLOR = auto() # Colored ASCII with colored backgrounds
+
 # Default sprite pixel size (can be 8 or 16)
 DEFAULT_SPRITE_SIZE: Literal[8, 16] = 8
 
@@ -20,6 +27,9 @@ SPRITE_DIRECTORIES = {
     8: "assets/8x8",
     16: "assets/16x16",
 }
+
+# Global Rendering Configuration
+CURRENT_RENDERING_MODE = RenderingMode.SPRITE
 
 
 def get_sprite_directory(sprite_size: int) -> str:
@@ -60,9 +70,11 @@ def validate_sprite_directory(sprite_size: int) -> bool:
 
 
 __all__ = [
+    "RenderingMode",
     "DEFAULT_SPRITE_SIZE",
     "SUPPORTED_SPRITE_SIZES",
     "SPRITE_DIRECTORIES",
+    "CURRENT_RENDERING_MODE",
     "get_sprite_directory",
     "validate_sprite_directory",
 ]

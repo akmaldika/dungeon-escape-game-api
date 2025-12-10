@@ -38,7 +38,61 @@ class AssetLoader:
 
     def load_assets(self) -> None:
         """Load assets based on the current rendering mode."""
-        self._load_sprites()
+        from src.core.config import CURRENT_RENDERING_MODE, RenderingMode
+        
+        if CURRENT_RENDERING_MODE == RenderingMode.SPRITE:
+            self._load_sprites()
+        elif CURRENT_RENDERING_MODE in (RenderingMode.CHAR, RenderingMode.CHAR_COLOR):
+            self._generate_char_assets(CURRENT_RENDERING_MODE)
+
+    def _generate_char_assets(self, mode: 'RenderingMode') -> None:
+        """Generate ASCII-style assets."""
+        from src.core.config import RenderingMode
+        
+        # Char mapping
+        chars = {
+            'player': '@', 'ghost': 'G', 'red_ghost': 'R',
+            'floor': '.', 'dark_floor': '.',
+            'wall': '#', 'dark_wall': '#',
+            'ladder': '>', 'wooden_box': '!'
+        }
+        
+        # Color mapping (foreground)
+        fg_colors = {
+            'player': color.player,
+            'ghost': color.ghost,
+            'red_ghost': color.red_ghost,
+            'floor': color.floor,
+            'dark_floor': color.dark_wall, # Darker for non-visible
+            'wall': color.wall,
+            'dark_wall': color.dark_wall,
+            'ladder': color.stairs,
+            'wooden_box': color.health_potion
+        }
+
+        # Background mapping
+        bg_colors = {}
+        if mode == RenderingMode.CHAR_COLOR:
+            # High contrast backgrounds for CHAR_COLOR
+            bg_colors = {
+                'floor': (20, 20, 30),
+                'dark_floor': (5, 5, 10),
+                'wall': (40, 40, 50),
+                'dark_wall': (10, 10, 20),
+            }
+        
+        # In CHAR mode (classic), force white/grey and black background
+        if mode == RenderingMode.CHAR:
+            for k in fg_colors:
+                if 'dark' in k:
+                    fg_colors[k] = (100, 100, 100)
+                else:
+                    fg_colors[k] = (255, 255, 255)
+
+        for name, char in chars.items():
+            fg = fg_colors.get(name, (255, 255, 255))
+            bg = bg_colors.get(name, (0, 0, 0))
+            self.sprites[name] = self.create_text_tile(char, fg, bg)
 
     def _load_sprites(self) -> None:
         """Load sprites from files."""
