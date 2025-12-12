@@ -18,6 +18,7 @@ class GameMap:
     """
     The game map, which holds tiles and entities.
     """
+
     def __init__(
         self, engine: Engine, width: int, height: int, entities: Iterable[Entity] = ()
     ):
@@ -54,12 +55,14 @@ class GameMap:
         yield from (entity for entity in self.entities if isinstance(entity, Item))
 
     def get_blocking_entity_at_location(
-        self, location_x: int, location_y: int,
+        self,
+        location_x: int,
+        location_y: int,
     ) -> Entity | None:
         """Return the blocking entity at a location, if any."""
         for entity in self.entities:
             if (
-                getattr(entity, 'blocks_movement', False)
+                getattr(entity, "blocks_movement", False)
                 and entity.x == location_x
                 and entity.y == location_y
             ):
@@ -80,7 +83,7 @@ class GameMap:
     def render(self, console: Console) -> None:
         """
         Renders the map.
-        
+
         If a tile is in the "visible" array, then draw it with the "light" colors.
         If it isn't, but it's in the "explored" array, then draw it with the "dark" colors.
         Otherwise, the default is "SHROUD".
@@ -110,6 +113,7 @@ class GameWorld:
     """
     Holds the settings for the GameMap, and generates new maps when moving down the stairs.
     """
+
     def __init__(
         self,
         *,
@@ -119,27 +123,38 @@ class GameWorld:
         max_rooms: int,
         room_min_size: int,
         room_max_size: int,
-        current_floor: int = 0
+        current_floor: int = 0,
+        map_gen_type: str = "dungeon",
     ):
+        from src.map.configuration import MapConfiguration
+
         self.engine = engine
-        self.map_width = map_width
-        self.map_height = map_height
-        self.max_rooms = max_rooms
-        self.room_min_size = room_min_size
-        self.room_max_size = room_max_size
         self.current_floor = current_floor
+        self.map_gen_type = map_gen_type
+
+        # Create configuration object from legacy arguments
+        self.config = MapConfiguration(
+            map_width=map_width,
+            map_height=map_height,
+            max_rooms=max_rooms,
+            room_min_size=room_min_size,
+            room_max_size=room_max_size,
+        )
 
     def generate_floor(self) -> None:
         """Generate a new floor and update the engine's game map."""
-        from src.map.procgen import generate_dungeon
+        from src.map.spawner import RandomTableSpawner
+        from src.map.generators.simple_dungeon import SimpleDungeonGenerator
+        from src.map.generators.cellular import CellularAutomataGenerator
 
         self.current_floor += 1
 
-        self.engine.game_map = generate_dungeon(
-            max_rooms=self.max_rooms,
-            room_min_size=self.room_min_size,
-            room_max_size=self.room_max_size,
-            map_width=self.map_width,
-            map_height=self.map_height,
-            engine=self.engine,
-        )
+        # Use new modular system
+        spawner = RandomTableSpawner()
+
+        if self.map_gen_type == "cellular":
+            generator = CellularAutomataGenerator(self.config, spawner)
+        else:
+            generator = SimpleDungeonGenerator(self.config, spawner)
+
+        self.engine.game_map = generator.generate(self.engine)

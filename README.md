@@ -11,6 +11,8 @@ A turn-based roguelike dungeon crawler game with dual control modes: a tradition
   - `char_color`: Colored ASCII on high-contrast backgrounds.
 - **Visuals**: FOV system with fog of war (explored areas are dimmed by 50%).
 - **Procedural Generation**: Random dungeon layouts.
+  - Classic Dungeon (Rectangular rooms + corridors).
+  - Cellular Automata (Organic caves).
 - **Custom Maps**: Load maps from files or strings.
 - **Headless Mode**: Run without a window for fast AI training.
 
@@ -95,7 +97,11 @@ Initialize a new session.
 
 **Body Parameters:**
 
-- `mode`: `"procedural"` (default), `"custom"` (load file), or `"string"`.
+- `mode`: Map generation mode:
+  - `"procedural"` (Default Dungeon)
+  - `"cellular"` (Cellular Automata/Caves)
+  - `"custom"` (load file)
+  - `"string"` (raw data)
 - `fov_mode`: `"partial"` (default) or `"all"`.
 - `fov_radius`: Integer (default 8).
 - `map_width`, `map_height`: Dimensions for procedural maps.
