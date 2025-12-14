@@ -284,18 +284,10 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
     return tile_size, port, headless, known_args.render_mode
 
 
-def handle_sigint(signum, frame):
-    print(f"\nReceived signal {signum}, stopping game...")
-    # We can't easily access the game instance here without a global,
-    # but the main loop checks for KeyboardInterrupt too.
-    # Ideally, we'd pass a shutdown event or similar.
-    sys.exit(0)
-
-
 def main() -> None:
-    # Register signal handlers
-    signal.signal(signal.SIGINT, handle_sigint)
-    signal.signal(signal.SIGTERM, handle_sigint)
+    # Register signal handlers - DISABLED: Rely on KeyboardInterrupt
+    # signal.signal(signal.SIGINT, handle_sigint)
+    # signal.signal(signal.SIGTERM, handle_sigint)
 
     tile_size, port, headless, render_mode = parse_arguments(sys.argv[1:])
 
