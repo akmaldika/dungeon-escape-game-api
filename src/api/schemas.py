@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 
 class StartGameRequest(BaseModel):
-    mode: Literal["procedural", "custom", "string"] = "procedural"
+    mode: Literal["procedural", "custom", "string", "cellular"] = "procedural"
     custom_map: str | None = None  # String representation of the map
     # Procedural generation parameters (only used if mode="procedural")
     max_rooms: int | None = 30

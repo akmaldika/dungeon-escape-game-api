@@ -132,10 +132,14 @@ class GameWorld:
         self.current_floor = current_floor
         self.map_gen_type = map_gen_type
 
+        # Prevent map from overlapping with UI (which takes bottom 5 rows)
+        # Standard screen height is 45, so map should be max 40.
+        safe_height = min(map_height, 40)
+
         # Create configuration object from legacy arguments
         self.config = MapConfiguration(
             map_width=map_width,
-            map_height=map_height,
+            map_height=safe_height,
             max_rooms=max_rooms,
             room_min_size=room_min_size,
             room_max_size=room_max_size,

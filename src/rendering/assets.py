@@ -6,6 +6,7 @@ from typing import Dict, Tuple, Optional
 
 from src.core.config import get_sprite_directory
 from src.core import color
+from src.core.config import RenderingMode
 
 class AssetLoader:
     """Handles loading and management of game assets (sprites, fonts)."""

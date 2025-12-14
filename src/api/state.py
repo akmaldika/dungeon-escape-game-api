@@ -38,8 +38,8 @@ class ThreadSafeGameState:
     def check_and_reset_level_steps(self):
         """Check if we've moved to a new level and reset step count if so."""
         with self.lock:
-            if self.engine and hasattr(self.engine, 'game_world'):
-                current_level = getattr(self.engine.game_world, 'current_floor', 1)
+            if self.engine and hasattr(self.engine, "game_world"):
+                current_level = getattr(self.engine.game_world, "current_floor", 1)
                 if current_level != self.last_known_level:
                     self.current_level_step_count = 0
                     self.last_known_level = current_level
@@ -52,7 +52,9 @@ class ThreadSafeGameState:
     def get_state_snapshot(self) -> dict[str, Any] | None:
         """Get thread-safe snapshot of current game state for API responses."""
         with self.lock:
-            return SnapshotBuilder.build(self.engine, self.handler, self.current_level_step_count)
+            return SnapshotBuilder.build(
+                self.engine, self.handler, self.current_level_step_count
+            )
 
     def queue_action(self, action_key: str):
         """Queue an action from API to be processed by main game loop."""
@@ -65,9 +67,7 @@ class ThreadSafeGameState:
                 return None
 
             try:
-                # Render current state to pygame surface
-                self.renderer.render_complete(self.engine)
-                # Get screenshot as bytes
+                # Get screenshot as bytes (main thread handles rendering)
                 return self.renderer.get_screenshot_bytes()
             except Exception as e:
                 print(f"Screenshot error: {e}")

@@ -51,28 +51,28 @@ class GameApplication:
         self.tile_size = tile_size
         self.port = port
         self.headless = headless
-        
+
         self.screen_width = 80
         self.screen_height = 45
-        
+
         # Initialize Game State
         self.game_state = ThreadSafeGameState()
         self.api_handler = APIActionHandler(self.game_state)
 
         # Initialize Renderer
         self.renderer = PygameRenderer(
-            self.screen_width, 
-            self.screen_height, 
-            self.tile_size, 
-            headless=self.headless
+            self.screen_width,
+            self.screen_height,
+            self.tile_size,
+            headless=self.headless,
         )
-        
+
         # Initialize Input Handler (Main Menu)
         self.handler: input_handlers.BaseEventHandler = menus.MainMenu()
-        
+
         # Update Game State
         self.game_state.set_game_components(None, self.handler, self.renderer)
-        
+
         # Initialize API Server
         self.host, _, self.cors = get_server_settings()
         self.app = create_app(self.game_state, cors_origins=self.cors)
@@ -80,7 +80,9 @@ class GameApplication:
 
     def _run_api_server(self) -> None:
         """Run the FastAPI server in a separate thread."""
-        config = uvicorn.Config(self.app, host=self.host, port=self.port, log_level="info")
+        config = uvicorn.Config(
+            self.app, host=self.host, port=self.port, log_level="info"
+        )
         server = uvicorn.Server(config)
         # Disable signal handlers so main thread can handle Ctrl+C
         server.install_signal_handlers = lambda: None
@@ -91,13 +93,15 @@ class GameApplication:
         if self.headless:
             print(f"Pygame renderer initialized in HEADLESS mode")
         else:
-            print(f"Pygame renderer initialized: {self.screen_width}x{self.screen_height} tiles, {self.tile_size}x{self.tile_size} pixels per tile")
-            
+            print(
+                f"Pygame renderer initialized: {self.screen_width}x{self.screen_height} tiles, {self.tile_size}x{self.tile_size} pixels per tile"
+            )
+
         self.api_thread.start()
         print(f"API server started on http://{self.host}:{self.port}")
-        
+
         clock = pygame.time.Clock()
-        
+
         try:
             while self.game_state.is_running:
                 self._handle_events()
@@ -124,14 +128,21 @@ class GameApplication:
                 )
                 if tcod_event:
                     try:
-                        was_in_game = isinstance(self.handler, input_handlers.MainGameEventHandler)
+                        was_in_game = isinstance(
+                            self.handler, input_handlers.MainGameEventHandler
+                        )
                         new_handler = self.handler.handle_events(tcod_event)
                         if new_handler != self.handler:
                             self.handler = new_handler
                             self.game_state.update_handler(self.handler)
-                        if was_in_game and isinstance(self.handler, input_handlers.MainGameEventHandler):
+                        if was_in_game and isinstance(
+                            self.handler, input_handlers.MainGameEventHandler
+                        ):
                             self.game_state.increment_step_count()
-                        if isinstance(self.handler, input_handlers.EventHandler) and self.handler.engine:
+                        if (
+                            isinstance(self.handler, input_handlers.EventHandler)
+                            and self.handler.engine
+                        ):
                             self.game_state.set_game_components(
                                 self.handler.engine, self.handler, self.renderer
                             )
@@ -146,16 +157,20 @@ class GameApplication:
     def _render(self) -> None:
         """Render the current game state."""
         try:
-            if isinstance(self.handler, input_handlers.GameDoneEventHandler):
-                self.renderer.render_game_done_screen()
-            elif isinstance(self.handler, input_handlers.GameOverEventHandler):
-                self.renderer.render_game_over_screen()
-            elif isinstance(self.handler, input_handlers.EventHandler) and self.handler.engine:
-                self.renderer.render_complete(self.handler.engine)
-            elif isinstance(self.handler, menus.MainMenu):
-                self.renderer.render_main_menu()
-            elif hasattr(self.handler, 'on_render'):
-                self.renderer.clear()
+            with self.game_state.lock:
+                if isinstance(self.handler, input_handlers.GameDoneEventHandler):
+                    self.renderer.render_game_done_screen()
+                elif isinstance(self.handler, input_handlers.GameOverEventHandler):
+                    self.renderer.render_game_over_screen()
+                elif (
+                    isinstance(self.handler, input_handlers.EventHandler)
+                    and self.handler.engine
+                ):
+                    self.renderer.render_complete(self.handler.engine)
+                elif isinstance(self.handler, menus.MainMenu):
+                    self.renderer.render_main_menu()
+                elif hasattr(self.handler, "on_render"):
+                    self.renderer.clear()
             self.renderer.present()
         except Exception as e:
             print(f"Rendering error: {e}")
@@ -213,12 +228,14 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
         allow_abbrev=False,
     )
     parser.add_argument(
-        "-p", "--port",
+        "-p",
+        "--port",
         type=int,
         help=f"API port between {MIN_PORT} and {MAX_PORT} (default {DEFAULT_PORT})",
     )
     parser.add_argument(
-        "-t", "--tile-size",
+        "-t",
+        "--tile-size",
         type=int,
         choices=list(SUPPORTED_SPRITE_SIZES),
         help=f"Tile size in pixels (default {DEFAULT_SPRITE_SIZE})",
@@ -230,7 +247,8 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
     )
 
     parser.add_argument(
-        "-m", "--render-mode",
+        "-m",
+        "--render-mode",
         choices=["sprite", "char", "char_color"],
         default="sprite",
         help="Rendering mode: sprite (default), char (ASCII), char_color (Colored ASCII)",
@@ -241,7 +259,7 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
     # Handle legacy arguments (tile-size=8, port=8001)
     cli_tile_size = known_args.tile_size
     cli_port = known_args.port
-    
+
     for arg in legacy_args:
         if arg.startswith("tile-size="):
             try:
@@ -254,9 +272,13 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
             except (ValueError, IndexError):
                 pass
 
-    tile_size = _resolve_tile_size_value(cli_tile_size) if cli_tile_size else DEFAULT_SPRITE_SIZE
+    tile_size = (
+        _resolve_tile_size_value(cli_tile_size)
+        if cli_tile_size
+        else DEFAULT_SPRITE_SIZE
+    )
     port = _resolve_port_value(cli_port) if cli_port else DEFAULT_PORT
-    
+
     headless = known_args.headless or "--headless" in legacy_args or "-h" in legacy_args
 
     return tile_size, port, headless, known_args.render_mode
@@ -264,7 +286,7 @@ def parse_arguments(args: list[str]) -> tuple[int, int, bool, str]:
 
 def handle_sigint(signum, frame):
     print(f"\nReceived signal {signum}, stopping game...")
-    # We can't easily access the game instance here without a global, 
+    # We can't easily access the game instance here without a global,
     # but the main loop checks for KeyboardInterrupt too.
     # Ideally, we'd pass a shutdown event or similar.
     sys.exit(0)
@@ -274,22 +296,22 @@ def main() -> None:
     # Register signal handlers
     signal.signal(signal.SIGINT, handle_sigint)
     signal.signal(signal.SIGTERM, handle_sigint)
-    
+
     tile_size, port, headless, render_mode = parse_arguments(sys.argv[1:])
-    
+
     # Set global rendering mode
     import src.core.config
     from src.core.config import RenderingMode
-    
+
     if render_mode == "char":
         src.core.config.CURRENT_RENDERING_MODE = RenderingMode.CHAR
     elif render_mode == "char_color":
         src.core.config.CURRENT_RENDERING_MODE = RenderingMode.CHAR_COLOR
     else:
         src.core.config.CURRENT_RENDERING_MODE = RenderingMode.SPRITE
-        
+
     print(f"Rendering Mode: {src.core.config.CURRENT_RENDERING_MODE.name}")
-    
+
     app = GameApplication(tile_size, port, headless)
     app.start()
 

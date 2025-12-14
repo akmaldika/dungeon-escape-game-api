@@ -48,6 +48,14 @@ class CellularAutomataGenerator(MapGenerator):
                 if (x, y) not in largest_cavern:
                     dungeon.tiles[x, y] = tile_types.wall
 
+        # 3b. Enforce Borders (Make edges walls)
+        for x in range(dungeon.width):
+            dungeon.tiles[x, 0] = tile_types.wall
+            dungeon.tiles[x, dungeon.height - 1] = tile_types.wall
+        for y in range(dungeon.height):
+            dungeon.tiles[0, y] = tile_types.wall
+            dungeon.tiles[dungeon.width - 1, y] = tile_types.wall
+
         # 4. Place Player (find a safe spot in cavern)
         start_x, start_y = list(largest_cavern)[0]  # Just pick first valid point
         player.place(start_x, start_y, dungeon)

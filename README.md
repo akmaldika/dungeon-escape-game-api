@@ -90,6 +90,12 @@ Returns server status and configuration.
 curl http://localhost:8000/
 ```
 
+**PowerShell:**
+
+```powershell
+curl "http://localhost:8000/"
+```
+
 ### 2. Start Game
 
 `POST /start-game`
@@ -114,6 +120,36 @@ curl -X POST "http://localhost:8000/start-game" \
      -d '{"mode": "procedural", "fov_mode": "partial", "fov_radius": 8}'
 ```
 
+**PowerShell:**
+
+```powershell
+curl `
+  -X POST `
+  "http://localhost:8000/start-game" `
+  -H "Content-Type: application/json" `
+  -d '{"mode": "procedural", "fov_mode": "partial", "fov_radius": 8}'
+```
+
+**Example (Cellular Automata):**
+
+```bash
+curl `
+  -X POST `
+  "http://localhost:8000/start-game" `
+  -H "Content-Type: application/json" `
+  -d '{"mode": "cellular", "map_width": 80, "map_height": 40}'
+```
+
+**PowerShell:**
+
+```powershell
+curl `
+  -X POST `
+  "http://localhost:8000/start-game" `
+  -H "Content-Type: application/json" `
+  -d '{"mode": "cellular", "map_width": 80, "map_height": 40}'
+```
+
 **Example (Custom String Map):**
 
 ```bash
@@ -125,6 +161,21 @@ curl -X POST "http://localhost:8000/start-game" \
      }'
 ```
 
+**PowerShell:**
+
+```powershell
+curl `
+  -X POST `
+  "http://localhost:8000/start-game" `
+  -H "Content-Type: application/json" `
+  -d @'
+{
+  "mode": "string",
+  "custom_map": "###########\n#@.......>#\n###########"
+}
+'@
+```
+
 ### 3. Get State
 
 `GET /game-state`
@@ -132,6 +183,12 @@ Returns the current observation (JSON).
 
 ```bash
 curl http://localhost:8000/game-state
+```
+
+**PowerShell:**
+
+```powershell
+curl "http://localhost:8000/game-state"
 ```
 
 **Response includes:**
@@ -162,6 +219,16 @@ curl -X POST "http://localhost:8000/perform-action" \
      -d '{"action": "w"}'
 ```
 
+**PowerShell:**
+
+```powershell
+curl `
+  -X POST `
+  "http://localhost:8000/perform-action" `
+  -H "Content-Type: application/json" `
+  -d '{"action": "w"}'
+```
+
 ### 5. Get Screenshot
 
 `GET /game-screenshot`
@@ -169,6 +236,12 @@ Returns a PNG image of the current frame.
 
 ```bash
 curl http://localhost:8000/game-screenshot --output view.png
+```
+
+**PowerShell:**
+
+```powershell
+curl "http://localhost:8000/game-screenshot" --output view.png
 ```
 
 ## Monitoring Script
@@ -184,6 +257,29 @@ while true; do
   sleep 1
 done
 ```
+
+**PowerShell:**
+
+```powershell
+while ($true) {
+    Clear-Host
+    Write-Host "=== Game State ==="
+    curl -s "http://localhost:8000/game-state" | ConvertFrom-Json | ConvertTo-Json -Depth 5
+    Start-Sleep -Seconds 1
+}
+```
+
+_Note: These examples use the standard `curl` command syntax. If `curl` is aliased to `Invoke-WebRequest` in your PowerShell (default), you may need to use `curl.exe` or remove the alias._
+
+## Utility Scripts
+
+We provide several utility scripts in the `scripts/` directory to help developers:
+
+1.  **`clean_log.py`**: Deletes all generated logs in `log/`.
+2.  **`astar_to_stairs.py`**: Solves a map file using A\* pathfinding.
+3.  **`randomize_effect.py`**: Generates color-varied assets from base sprites.
+
+See [scripts/README.md](scripts/README.md) for full usage instructions.
 
 ## Game States
 

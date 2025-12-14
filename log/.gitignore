@@ -2,6 +2,8 @@
 procedural/
 string/
 custom/
+simple_dungeon/
+cave/
 data.json
 
 # Ignore API logs
